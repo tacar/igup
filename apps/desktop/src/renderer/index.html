@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+    <title>IGUP</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand">IGUP</div>
+        <p>Instagramへの接続と画像投稿を、あなたのPCから。</p>
+      </header>
+
+      <section class="card" aria-labelledby="connection-title">
+        <div class="section-heading">
+          <div>
+            <span class="step">1</span>
+            <h1 id="connection-title">Instagram接続</h1>
+          </div>
+          <span id="connection-badge" class="badge">確認中</span>
+        </div>
+        <p id="connection-detail" class="muted">接続状態を読み込んでいます。</p>
+        <button id="connect-button" type="button">Instagramに接続</button>
+      </section>
+
+      <section class="card" aria-labelledby="account-title">
+        <div class="section-heading">
+          <div><span class="step">2</span><h2 id="account-title">アカウント確認</h2></div>
+        </div>
+        <button id="account-button" class="secondary" type="button">アカウント情報を取得</button>
+        <dl id="account-details" class="details" hidden>
+          <div><dt>ユーザー名</dt><dd id="username"></dd></div>
+          <div><dt>アカウント種別</dt><dd id="account-type"></dd></div>
+          <div><dt>投稿数</dt><dd id="media-count"></dd></div>
+        </dl>
+      </section>
+
+      <section class="card" aria-labelledby="publish-title">
+        <div class="section-heading">
+          <div><span class="step">3</span><h2 id="publish-title">画像をテスト投稿</h2></div>
+        </div>
+        <form id="publish-form">
+          <label for="image-url">公開画像URL</label>
+          <input id="image-url" name="imageUrl" type="url" required placeholder="https://example.com/image.jpg" />
+          <small>Instagramから取得できるHTTPSの画像URLを指定してください。</small>
+          <label for="caption">キャプション</label>
+          <textarea id="caption" name="caption" maxlength="2200" rows="6" placeholder="投稿文を入力"></textarea>
+          <div class="form-footer"><span id="caption-count">0 / 2,200</span><button type="submit">投稿する</button></div>
+        </form>
+      </section>
+      <div id="notice" role="status" aria-live="polite"></div>
+    </main>
+    <script src="renderer.js"></script>
+  </body>
+</html>
