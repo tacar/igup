@@ -6,3 +6,10 @@ https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXYhttps://brain-market.
 
 読んで
 商材として買い切りで販売する。
+
+
+使い方はを書いて
+htmlに
+
+
+

@@ -4,3 +4,159 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
+Account	apps/desktop/src/main/types.ts	/^export type Account = {$/;"	t
+Attempt	apps/broker/src/attempt-store.ts	/^type Attempt = {$/;"	t
+AttemptStore	apps/broker/src/attempt-store.ts	/^export class AttemptStore {$/;"	c
+BrokerConfig	apps/broker/src/config.ts	/^export type BrokerConfig = {$/;"	t
+Connection	apps/desktop/src/main/types.ts	/^export type Connection = {$/;"	t
+ConnectionStorage	apps/desktop/src/main/storage.ts	/^export class ConnectionStorage {$/;"	c
+DesktopAuth	apps/desktop/src/main/auth.ts	/^export class DesktopAuth {$/;"	c
+InstagramClient	apps/desktop/src/main/instagram-client.ts	/^export class InstagramClient {$/;"	c
+InstagramConnection	apps/broker/src/attempt-store.ts	/^export type InstagramConnection = {$/;"	t
+MetaClient	apps/broker/src/meta-client.ts	/^export class MetaClient {$/;"	c
+StartResponse	apps/desktop/src/main/auth.ts	/^type StartResponse = { state: string; verifier: string; authorizationUrl: string };$/;"	t
+StoredConnection	apps/desktop/src/main/storage.ts	/^type StoredConnection = { encrypted: string; expiresAt: string | null };$/;"	t
+TokenResponse	apps/broker/src/meta-client.ts	/^type TokenResponse = { access_token: string; token_type?: string; expires_in?: number };$/;"	t
+accessToken	apps/broker/src/attempt-store.ts	/^  accessToken: string;$/;"	m
+accessToken	apps/broker/src/meta-client.ts	/^      accessToken: longToken.access_token,$/;"	m
+accessToken	apps/desktop/src/main/storage.ts	/^        accessToken: safeStorage.decryptString(Buffer.from(stored.encrypted, "base64")),$/;"	m
+accessToken	apps/desktop/src/main/types.ts	/^  accessToken: string;$/;"	m
+access_token	apps/broker/src/meta-client.ts	/^      access_token: shortToken.access_token,$/;"	m
+appId	apps/broker/src/config.ts	/^    appId: environment.META_APP_ID!,$/;"	m
+appId	apps/broker/src/config.ts	/^  appId: string;$/;"	m
+appSecret	apps/broker/src/config.ts	/^    appSecret: environment.META_APP_SECRET!,$/;"	m
+appSecret	apps/broker/src/config.ts	/^  appSecret: string;$/;"	m
+authorizationUrl	apps/broker/src/meta-client.ts	/^  authorizationUrl(state: string): string {$/;"	m
+body	apps/broker/src/meta-client.ts	/^      body: new URLSearchParams({$/;"	m
+body	apps/desktop/src/main/auth.ts	/^      body: JSON.stringify(this.pending),$/;"	m
+brokerUrl	apps/desktop/src/main/auth.ts	/^    private readonly brokerUrl: string,$/;"	m
+client_id	apps/broker/src/meta-client.ts	/^        client_id: this.config.appId,$/;"	m
+client_id	apps/broker/src/meta-client.ts	/^      client_id: this.config.appId,$/;"	m
+client_secret	apps/broker/src/meta-client.ts	/^        client_secret: this.config.appSecret,$/;"	m
+client_secret	apps/broker/src/meta-client.ts	/^      client_secret: this.config.appSecret,$/;"	m
+close	apps/desktop/src/main/auth.ts	/^  close(): void {$/;"	m
+complete	apps/broker/src/attempt-store.ts	/^  complete(state: string, connection: InstagramConnection, now = Date.now()): boolean {$/;"	m
+const.badge	apps/desktop/src/renderer/renderer.js	/^  badge: document.querySelector("#connection-badge"),$/;"	p
+constructor	apps/broker/src/meta-client.ts	/^  constructor(private readonly config: BrokerConfig) {}$/;"	m
+constructor	apps/desktop/src/main/auth.ts	/^  constructor($/;"	m
+constructor	apps/desktop/src/main/instagram-client.ts	/^  constructor(private readonly graphVersion = "v23.0") {}$/;"	m
+contextIsolation	apps/desktop/src/main/main.ts	/^      contextIsolation: true,$/;"	m
+cors	apps/broker/src/app.ts	/^import cors from "cors";$/;"	I
+create	apps/broker/src/attempt-store.ts	/^  create(now = Date.now()): { state: string; verifier: string } {$/;"	m
+createApp	apps/broker/src/app.ts	/^export function createApp(config: BrokerConfig, store = new AttemptStore(), meta = new MetaClient(config)) {$/;"	f
+createApp	apps/broker/src/server.ts	/^  createApp(config).listen(config.port, "0.0.0.0", () => {$/;"	m
+createdAt	apps/broker/src/attempt-store.ts	/^  createdAt: number;$/;"	m
+creation_id	apps/desktop/src/main/instagram-client.ts	/^      creation_id: container.id,$/;"	m
+describe	apps/broker/src/attempt-store.test.ts	/^describe("AttemptStore", () => {$/;"	m
+describe	apps/desktop/src/main/instagram-client.test.ts	/^describe("validatePublishInput", () => {$/;"	m
+desktopOrigin	apps/broker/src/config.ts	/^    desktopOrigin: environment.DESKTOP_ORIGIN ?? "http:\/\/127.0.0.1:42813",$/;"	m
+desktopOrigin	apps/broker/src/config.ts	/^  desktopOrigin: string;$/;"	m
+enable_fb_login	apps/broker/src/meta-client.ts	/^      enable_fb_login: "0",$/;"	m
+encrypted	apps/desktop/src/main/storage.ts	/^      encrypted: safeStorage.encryptString(connection.accessToken).toString("base64"),$/;"	m
+ensureCallbackServer	apps/desktop/src/main/auth.ts	/^  private ensureCallbackServer(): Promise<void> {$/;"	m
+escapeHtml	apps/broker/src/app.ts	/^function escapeHtml(value: string): string {$/;"	f
+exchangeCode	apps/broker/src/meta-client.ts	/^  async exchangeCode(code: string): Promise<{ accessToken: string; expiresAt: string | null }> {$/;"	m
+exists	apps/broker/src/attempt-store.ts	/^  exists(state: string, now = Date.now()): boolean {$/;"	m
+expect	apps/broker/src/attempt-store.test.ts	/^    expect(store.complete(attempt.state, connection, 2_000)).toBe(true);$/;"	m
+expect	apps/broker/src/attempt-store.test.ts	/^    expect(store.exists(attempt.state, 700_001)).toBe(false);$/;"	m
+expect	apps/broker/src/attempt-store.test.ts	/^    expect(store.redeem(attempt.state, "wrong", 3_000)).toBeNull();$/;"	m
+expect	apps/broker/src/attempt-store.test.ts	/^    expect(store.redeem(attempt.state, attempt.verifier, 3_000)).toBeNull();$/;"	m
+expect	apps/broker/src/attempt-store.test.ts	/^    expect(store.redeem(attempt.state, attempt.verifier, 3_000)).toEqual(connection);$/;"	m
+expect	apps/desktop/src/main/instagram-client.test.ts	/^    expect(() => validatePublishInput("https:\/\/example.com\/image.jpg", "a".repeat(2_200))).not.toThrow();$/;"	m
+expect	apps/desktop/src/main/instagram-client.test.ts	/^    expect(() => validatePublishInput("https:\/\/example.com\/image.jpg", "a".repeat(2_201))).toThrow();$/;"	m
+expect	apps/desktop/src/main/instagram-client.test.ts	/^    expect(() => validatePublishInput(url, "caption")).toThrow();$/;"	m
+expiresAt	apps/broker/src/attempt-store.ts	/^  expiresAt: string | null;$/;"	m
+expiresAt	apps/broker/src/meta-client.ts	/^      expiresAt: longToken.expires_in$/;"	m
+expiresAt	apps/desktop/src/main/storage.ts	/^        expiresAt: stored.expiresAt,$/;"	m
+expiresAt	apps/desktop/src/main/storage.ts	/^      expiresAt: connection.expiresAt,$/;"	m
+expiresAt	apps/desktop/src/main/types.ts	/^  expiresAt: string | null;$/;"	m
+express	apps/broker/src/app.ts	/^import express from "express";$/;"	I
+fields	apps/desktop/src/main/instagram-client.ts	/^      fields: "id,user_id,username,account_type,media_count",$/;"	m
+for	apps/broker/src/attempt-store.ts	/^    for (const [state, attempt] of this.attempts) {$/;"	m
+force_authentication	apps/broker/src/meta-client.ts	/^      force_authentication: "1",$/;"	m
+getAccount	apps/desktop/src/main/instagram-client.ts	/^  async getAccount(connection: Connection): Promise<Account> {$/;"	m
+grant_type	apps/broker/src/meta-client.ts	/^        grant_type: "authorization_code",$/;"	m
+grant_type	apps/broker/src/meta-client.ts	/^      grant_type: "ig_exchange_token",$/;"	m
+graphVersion	apps/broker/src/config.ts	/^    graphVersion: environment.META_GRAPH_VERSION ?? "v23.0",$/;"	m
+graphVersion	apps/broker/src/config.ts	/^  graphVersion: string;$/;"	m
+handleCallback	apps/desktop/src/main/auth.ts	/^  private async handleCallback(url: URL): Promise<void> {$/;"	m
+headers	apps/broker/src/meta-client.ts	/^      headers: { "content-type": "application\/x-www-form-urlencoded" },$/;"	m
+headers	apps/desktop/src/main/auth.ts	/^      headers: { "content-type": "application\/json" },$/;"	m
+height	apps/desktop/src/main/main.ts	/^    height: 720,$/;"	m
+helmet	apps/broker/src/app.ts	/^import helmet from "helmet";$/;"	I
+id	apps/desktop/src/main/types.ts	/^  id: string;$/;"	m
+if	apps/broker/src/app.ts	/^      if (!store.complete(state, connection)) throw new Error("Authentication attempt has expired");$/;"	m
+if	apps/broker/src/app.ts	/^    if (!code) return response.status(400).send(resultPage("認証コードがありません。", false));$/;"	m
+if	apps/broker/src/app.ts	/^    if (!connection) return response.status(400).json({ error: "認証結果が無効か、すでに使用されています。" });$/;"	m
+if	apps/broker/src/app.ts	/^    if (!state || !store.exists(state)) return response.status(400).send(resultPage("認証情報が無効か期限切れです。", false));$/;"	m
+if	apps/broker/src/app.ts	/^    if (error) return response.status(400).send(resultPage(`Instagram認証を完了できませんでした: ${escapeHtml(error)}`, false));$/;"	m
+if	apps/broker/src/attempt-store.ts	/^      if (now - attempt.createdAt > ATTEMPT_TTL_MS || resultExpired) this.attempts.delete(state);$/;"	m
+if	apps/broker/src/attempt-store.ts	/^    if (!attempt || attempt.result) return false;$/;"	m
+if	apps/broker/src/attempt-store.ts	/^    if (!attempt?.result || !safeEqual(attempt.verifier, verifier)) return null;$/;"	m
+if	apps/broker/src/config.ts	/^  if (!Number.isInteger(port) || port < 1 || port > 65_535) {$/;"	m
+if	apps/broker/src/config.ts	/^  if (missing.length > 0) {$/;"	m
+if	apps/broker/src/meta-client.ts	/^  if (!response.ok) {$/;"	m
+if	apps/desktop/src/main/auth.ts	/^      if (url.pathname !== "\/oauth\/callback") {$/;"	m
+if	apps/desktop/src/main/auth.ts	/^    if (!response.ok || "error" in result) throw new Error("error" in result ? result.error : "認証結果を取得できませんでした。");$/;"	m
+if	apps/desktop/src/main/auth.ts	/^    if (!response.ok) throw new Error("認証サーバーを開始できませんでした。");$/;"	m
+if	apps/desktop/src/main/auth.ts	/^    if (!this.pending || state !== this.pending.state) throw new Error("認証状態が一致しません。");$/;"	m
+if	apps/desktop/src/main/auth.ts	/^    if (this.pending) throw new Error("認証処理はすでに進行中です。");$/;"	m
+if	apps/desktop/src/main/auth.ts	/^    if (this.server?.listening) return Promise.resolve();$/;"	m
+if	apps/desktop/src/main/instagram-client.ts	/^    if (!response.ok) {$/;"	m
+if	apps/desktop/src/main/instagram-client.ts	/^    if (method === "GET") url.search = values.toString();$/;"	m
+if	apps/desktop/src/main/instagram-client.ts	/^  if (caption.length > 2_200) throw new Error("キャプションは2,200文字以内で入力してください。");$/;"	m
+if	apps/desktop/src/main/instagram-client.ts	/^  if (parsed.protocol !== "https:") throw new Error("画像URLは公開されたHTTPS URLを指定してください。");$/;"	m
+if	apps/desktop/src/main/main.ts	/^    if (!isPublishInput(input)) throw new Error("投稿内容が不正です。");$/;"	m
+if	apps/desktop/src/main/main.ts	/^  if (!connection) throw new Error("先にInstagramへ接続してください。");$/;"	m
+if	apps/desktop/src/main/storage.ts	/^      if (code === "ENOENT") return null;$/;"	m
+if	apps/desktop/src/main/storage.ts	/^    if (!safeStorage.isEncryptionAvailable()) {$/;"	m
+image_url	apps/desktop/src/main/instagram-client.ts	/^      image_url: imageUrl,$/;"	m
+isPublishInput	apps/desktop/src/main/main.ts	/^function isPublishInput(value: unknown): value is { imageUrl: string; caption: string } {$/;"	f
+it	apps/broker/src/attempt-store.test.ts	/^  it("redeems a completed result exactly once", () => {$/;"	m
+it	apps/broker/src/attempt-store.test.ts	/^  it("rejects the wrong verifier and expired attempts", () => {$/;"	m
+it	apps/desktop/src/main/instagram-client.test.ts	/^  it("accepts a public HTTPS URL and boundary caption", () => {$/;"	m
+it	apps/desktop/src/main/instagram-client.test.ts	/^  it("rejects captions over the Instagram limit", () => {$/;"	m
+load	apps/desktop/src/main/storage.ts	/^  async load(): Promise<Connection | null> {$/;"	m
+loadConfig	apps/broker/src/config.ts	/^export function loadConfig(environment: NodeJS.ProcessEnv): BrokerConfig {$/;"	f
+method	apps/broker/src/meta-client.ts	/^      method: "POST",$/;"	m
+method	apps/desktop/src/main/auth.ts	/^      method: "POST",$/;"	m
+minHeight	apps/desktop/src/main/main.ts	/^    minHeight: 600,$/;"	m
+minWidth	apps/desktop/src/main/main.ts	/^    minWidth: 720,$/;"	m
+nodeIntegration	apps/desktop/src/main/main.ts	/^      nodeIntegration: false,$/;"	m
+onConnected	apps/desktop/src/main/auth.ts	/^    private readonly onConnected: (connection: Connection) => Promise<void>,$/;"	m
+parseMetaResponse	apps/broker/src/meta-client.ts	/^async function parseMetaResponse<T>(response: Response): Promise<T> {$/;"	f
+path	apps/desktop/src/main/storage.ts	/^  private get path(): string {$/;"	m
+pending	apps/desktop/src/main/auth.ts	/^  private pending: { state: string; verifier: string } | null = null;$/;"	m
+port	apps/broker/src/config.ts	/^  port: number;$/;"	m
+preload	apps/desktop/src/main/main.ts	/^      preload: join(currentDirectory, "..\/preload\/preload.cjs"),$/;"	m
+publishImage	apps/desktop/src/main/instagram-client.ts	/^  async publishImage(connection: Connection, accountId: string, imageUrl: string, caption: string): Promise<{ id: string }> {$/;"	m
+purge	apps/broker/src/attempt-store.ts	/^  private purge(now: number): void {$/;"	m
+redeem	apps/broker/src/attempt-store.ts	/^  redeem(state: string, verifier: string, now = Date.now()): InstagramConnection | null {$/;"	m
+redirectUri	apps/broker/src/config.ts	/^    redirectUri: environment.META_REDIRECT_URI!,$/;"	m
+redirectUri	apps/broker/src/config.ts	/^  redirectUri: string;$/;"	m
+redirect_uri	apps/broker/src/meta-client.ts	/^        redirect_uri: this.config.redirectUri,$/;"	m
+redirect_uri	apps/broker/src/meta-client.ts	/^      redirect_uri: this.config.redirectUri,$/;"	m
+registerHandlers	apps/desktop/src/main/main.ts	/^  registerHandlers();$/;"	m
+registerHandlers	apps/desktop/src/main/main.ts	/^function registerHandlers(): void {$/;"	f
+requireConnection	apps/desktop/src/main/main.ts	/^async function requireConnection() {$/;"	f
+response_type	apps/broker/src/meta-client.ts	/^      response_type: "code",$/;"	m
+resultPage	apps/broker/src/app.ts	/^function resultPage(message: string, success: boolean): string {$/;"	f
+safeEqual	apps/broker/src/attempt-store.ts	/^function safeEqual(left: string, right: string): boolean {$/;"	f
+sandbox	apps/desktop/src/main/main.ts	/^      sandbox: true,$/;"	m
+save	apps/desktop/src/main/storage.ts	/^  async save(connection: Connection): Promise<void> {$/;"	m
+scope	apps/broker/src/meta-client.ts	/^      scope: "instagram_business_basic,instagram_business_content_publish",$/;"	m
+server	apps/desktop/src/main/auth.ts	/^  private server: Server | null = null;$/;"	m
+start	apps/desktop/src/main/auth.ts	/^  async start(): Promise<void> {$/;"	m
+stringParam	apps/broker/src/app.ts	/^function stringParam(value: unknown): string | null {$/;"	f
+title	apps/desktop/src/main/main.ts	/^    title: "IGUP",$/;"	m
+type	apps/broker/src/app.ts	/^import type { BrokerConfig } from ".\/config.js";$/;"	I
+type	apps/broker/src/meta-client.ts	/^import type { BrokerConfig } from ".\/config.js";$/;"	I
+type	apps/desktop/src/main/auth.ts	/^import type { Connection } from ".\/types.js";$/;"	I
+type	apps/desktop/src/main/instagram-client.ts	/^import type { Account, Connection } from ".\/types.js";$/;"	I
+type	apps/desktop/src/main/storage.ts	/^import type { Connection } from ".\/types.js";$/;"	I
+username	apps/desktop/src/main/types.ts	/^  username: string;$/;"	m
+validatePublishInput	apps/desktop/src/main/instagram-client.ts	/^    validatePublishInput(imageUrl, caption);$/;"	m
+validatePublishInput	apps/desktop/src/main/instagram-client.ts	/^export function validatePublishInput(imageUrl: string, caption: string): void {$/;"	f
+verifier	apps/broker/src/attempt-store.ts	/^  verifier: string;$/;"	m
+webPreferences	apps/desktop/src/main/main.ts	/^    webPreferences: {$/;"	m
+width	apps/desktop/src/main/main.ts	/^    width: 920,$/;"	m

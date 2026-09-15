@@ -1,0 +1,550 @@
+<title>IGUP 取扱説明書</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --ink: #1c1b17;
+    --ink-soft: #4a483f;
+    --muted: #6b6a5f;
+    --paper: #e7e8e1;
+    --surface: #f7f7f2;
+    --surface-2: #eeefe8;
+    --line: #c9c8bc;
+    --signal: #b23d1c;
+    --signal-ink: #ffffff;
+    --ok: #3f6b4f;
+    --ok-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ede9df;
+      --ink-soft: #cfcabd;
+      --muted: #a6a398;
+      --paper: #17171a;
+      --surface: #201e1b;
+      --surface-2: #262320;
+      --line: #3a3733;
+      --signal: #e2653a;
+      --signal-ink: #1a1210;
+      --ok: #74ad82;
+      --ok-ink: #12211a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ede9df;
+    --ink-soft: #cfcabd;
+    --muted: #a6a398;
+    --paper: #17171a;
+    --surface: #201e1b;
+    --surface-2: #262320;
+    --line: #3a3733;
+    --signal: #e2653a;
+    --signal-ink: #1a1210;
+    --ok: #74ad82;
+    --ok-ink: #12211a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 16px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: "Zen Kaku Gothic New", "BIZ UDPGothic", sans-serif;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0;
+  }
+  a { color: var(--signal); }
+  a:focus-visible, .btn-chip:focus-visible, .jumpnav a:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 3px;
+  }
+  .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page {
+    max-width: 900px;
+    margin-inline: auto;
+    padding-inline: 20px;
+    padding-block: 48px 96px;
+  }
+  .prose { max-width: 40em; }
+  section { margin-top: 64px; }
+  section > h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+
+  /* ---- masthead ---- */
+  .masthead .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .masthead h1 {
+    font-size: clamp(2.4rem, 7vw, 3.4rem);
+    font-weight: 900;
+    letter-spacing: .01em;
+    margin-top: 10px;
+  }
+  .masthead .tagline {
+    margin-top: 12px;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    max-width: 32em;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-top: 22px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .74rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .meta-row span:not(:last-child)::after { content: "·"; margin-left: 18px; color: var(--line); }
+
+  .jumpnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+  }
+  .jumpnav a {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .78rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 14px;
+    white-space: nowrap;
+  }
+  .jumpnav a:hover { border-color: var(--signal); color: var(--signal); }
+
+  /* ---- prereq list ---- */
+  .prereq ul {
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 14px;
+  }
+  .prereq li {
+    max-width: 40em;
+    padding-left: 26px;
+    position: relative;
+    color: var(--ink-soft);
+  }
+  .prereq li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .55em;
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--signal);
+    transform: rotate(45deg);
+  }
+  .prereq li strong { color: var(--ink); font-weight: 700; }
+
+  /* ---- steps ---- */
+  .step {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 8px 28px;
+    padding-block: 36px;
+    border-top: 1px solid var(--line);
+    scroll-margin-top: 20px;
+  }
+  .steps section.step:last-of-type,
+  .step:last-child { border-bottom: 1px solid var(--line); }
+  .step-num {
+    width: 60px;
+    height: 60px;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+  .step-of {
+    grid-column: 2;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .step h3 {
+    grid-column: 2;
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .step-body {
+    grid-column: 2;
+    margin-top: 14px;
+    max-width: 40em;
+    display: grid;
+    gap: 12px;
+  }
+  .step-body p { margin: 0; color: var(--ink-soft); }
+  .step-body p strong { color: var(--ink); }
+
+  .btn-chip {
+    display: inline-block;
+    font-family: "BIZ UDPGothic", sans-serif;
+    font-weight: 700;
+    font-size: .92em;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--ink-soft);
+    border-radius: 7px;
+    padding: 1px 10px;
+    box-shadow: 0 1.5px 0 var(--ink-soft);
+  }
+
+  .badge-legend {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .badge-legend .item { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .badge-chip {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .04em;
+    padding: 3px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+  }
+  .badge-chip.is-checking { color: var(--muted); background: var(--surface-2); border-color: var(--line); }
+  .badge-chip.is-off { color: var(--ink-soft); background: transparent; border-color: var(--ink-soft); }
+  .badge-chip.is-on { color: var(--ok-ink); background: var(--ok); border-color: var(--ok); }
+  .badge-legend .item span.cap { font-size: .78rem; color: var(--muted); }
+
+  .callout {
+    margin-top: 4px;
+    border-left: 3px solid var(--signal);
+    padding: 4px 0 4px 16px;
+  }
+  .callout .label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--signal);
+    font-weight: 700;
+  }
+  .callout p { margin-top: 6px; }
+
+  .example-block {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px 18px;
+    max-width: 34em;
+  }
+  .example-block .tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .68rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .example-block dl {
+    margin: 12px 0 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 18px;
+  }
+  .example-block dt {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .74rem;
+    color: var(--muted);
+    white-space: nowrap;
+    align-self: center;
+  }
+  .example-block dd { margin: 0; font-weight: 700; align-self: center; }
+
+  .field-mock {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px 18px;
+    max-width: 34em;
+    display: grid;
+    gap: 14px;
+  }
+  .field-mock .f-label {
+    font-size: .82rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .field-mock .f-input {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 8px 10px;
+    background: var(--paper);
+    color: var(--muted);
+    font-family: "JetBrains Mono", monospace;
+    font-size: .84rem;
+  }
+  .field-mock .f-textarea {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 8px 10px;
+    background: var(--paper);
+    min-height: 52px;
+  }
+  .field-mock .f-count {
+    text-align: right;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ---- troubleshooting ---- */
+  .trouble-row {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 6px 24px;
+    padding-block: 18px;
+    border-top: 1px solid var(--line);
+    align-items: start;
+  }
+  .trouble-row:last-child { border-bottom: 1px solid var(--line); }
+  .msg {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .8rem;
+    color: var(--ink);
+    background: var(--surface-2);
+    border-radius: 4px;
+    padding: 6px 10px;
+    line-height: 1.5;
+    width: fit-content;
+  }
+  .fix { color: var(--ink-soft); max-width: 34em; }
+
+  /* ---- spec table ---- */
+  .spec-table { margin-top: 18px; max-width: 46em; }
+  .spec-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 200px) 1fr;
+    gap: 6px 24px;
+    padding-block: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .spec-row:last-child { border-bottom: 1px solid var(--line); }
+  .spec-row .k { color: var(--muted); font-size: .88rem; }
+  .spec-row .v { font-family: "JetBrains Mono", monospace; font-size: .86rem; color: var(--ink-soft); }
+
+  footer.note {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+    max-width: 40em;
+  }
+
+  @media (max-width: 600px) {
+    .step { grid-template-columns: 44px 1fr; gap: 6px 16px; }
+    .step-num { width: 42px; height: 42px; font-size: 1.05rem; }
+    .trouble-row, .spec-row { grid-template-columns: 1fr; }
+    .msg { white-space: normal; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .masthead { animation: rise .5s ease-out both; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Operation Guide</p>
+    <h1>IGUP</h1>
+    <p class="tagline">Instagramへの接続と画像投稿を、あなたのPCから。</p>
+    <div class="meta-row">
+      <span>Desktop App</span>
+      <span class="mono">v0.1.0</span>
+      <span class="mono">3 Steps</span>
+    </div>
+    <nav class="jumpnav" aria-label="このページの見出し">
+      <a href="#step-01">01 接続</a>
+      <a href="#step-02">02 確認</a>
+      <a href="#step-03">03 投稿</a>
+      <a href="#trouble">困ったときは</a>
+      <a href="#spec">仕様</a>
+    </nav>
+  </header>
+
+  <section class="intro">
+    <div class="prose">
+      <p>IGUPは、InstagramプロアカウントのOAuth接続・アカウント情報取得・画像のテスト投稿を行う買い切り型のデスクトップツールです。Metaアプリのシークレットは認証サーバー側だけが保持し、あなたのPCへ配布されることはありません。</p>
+    </div>
+  </section>
+
+  <section class="prereq">
+    <h2>ご利用前に</h2>
+    <ul>
+      <li><strong>Instagramプロアカウント</strong>（ビジネスまたはクリエイター）が必要です。個人アカウントの場合は、Instagram側で先に切り替えてください。</li>
+      <li><strong>インターネット接続</strong>が必要です。IGUPはMeta社のInstagram APIと通信します。</li>
+      <li><strong>投稿する画像の公開HTTPS URL</strong>を用意してください。Instagram側から直接取得できる画像URLのみ対応しており、お使いのPC内のファイルを直接アップロードすることはできません（初期版の制限です）。</li>
+    </ul>
+  </section>
+
+  <section class="steps">
+    <h2>操作手順</h2>
+
+    <div class="step" id="step-01">
+      <div class="step-num mono">01</div>
+      <p class="step-of">Step 1 / 3</p>
+      <h3>Instagram接続</h3>
+      <div class="step-body">
+        <p>画面上部の <span class="btn-chip">Instagramに接続</span> を押してください。既定のブラウザが開き、Metaのログイン・認可画面が表示されます。内容を確認して許可すると、自動でIGUPの画面に戻ります。</p>
+        <p>接続が完了すると通知欄に「Instagramと接続しました。」と表示され、トークンの有効期限も画面に表示されます。接続済みの状態では、ボタンの表示は <span class="btn-chip">再接続する</span> に変わります。</p>
+
+        <div class="badge-legend">
+          <div class="item">
+            <span class="badge-chip is-checking">確認中</span>
+            <span class="cap">起動直後</span>
+          </div>
+          <div class="item">
+            <span class="badge-chip is-off">未接続</span>
+            <span class="cap">接続が必要</span>
+          </div>
+          <div class="item">
+            <span class="badge-chip is-on">接続済み</span>
+            <span class="cap">利用可能</span>
+          </div>
+        </div>
+
+        <div class="callout">
+          <p class="label">セキュリティについて</p>
+          <p>アクセストークンはOS標準の暗号化機能を使い、このPC内だけに保存されます。認証サーバーは認証結果を最大5分だけ一時的に保持し、一度使うと無効になります。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" id="step-02">
+      <div class="step-num mono">02</div>
+      <p class="step-of">Step 2 / 3</p>
+      <h3>アカウント確認</h3>
+      <div class="step-body">
+        <p><span class="btn-chip">アカウント情報を取得</span> を押すと、接続したプロアカウントのユーザー名・アカウント種別・投稿数が表示されます。</p>
+        <div class="example-block">
+          <p class="tag">表示例</p>
+          <dl>
+            <dt>ユーザー名</dt><dd>@example_account</dd>
+            <dt>アカウント種別</dt><dd>ビジネス</dd>
+            <dt>投稿数</dt><dd class="mono">128</dd>
+          </dl>
+        </div>
+        <p>手順1が未完了のまま実行すると「先にInstagramへ接続してください。」と表示されます。先に接続を済ませてください。</p>
+      </div>
+    </div>
+
+    <div class="step" id="step-03">
+      <div class="step-num mono">03</div>
+      <p class="step-of">Step 3 / 3</p>
+      <h3>画像をテスト投稿</h3>
+      <div class="step-body">
+        <p>「公開画像URL」と「キャプション」を入力し、<span class="btn-chip">投稿する</span> を押してください。</p>
+
+        <div class="field-mock">
+          <p class="tag">画面イメージ</p>
+          <div>
+            <span class="f-label">公開画像URL</span>
+            <div class="f-input">https://example.com/image.jpg</div>
+          </div>
+          <div>
+            <span class="f-label">キャプション</span>
+            <div class="f-textarea"></div>
+            <div class="f-count">0 / 2,200</div>
+          </div>
+        </div>
+
+        <p>画像URLはInstagram側から直接取得できる公開HTTPSのものを指定します。キャプションは最大2,200文字まで、入力中は文字数がリアルタイムで表示されます。</p>
+        <p>投稿が成功すると、通知欄に「投稿しました（メディアID: …）」と表示されます。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="trouble" id="trouble">
+    <h2>困ったときは</h2>
+
+    <div class="trouble-row">
+      <p class="msg">先にInstagramへ接続してください。</p>
+      <p class="fix">手順1（Instagram接続）が完了していません。画面上部から接続を行ってください。</p>
+    </div>
+    <div class="trouble-row">
+      <p class="msg">認証処理はすでに進行中です。</p>
+      <p class="fix"><span class="btn-chip">Instagramに接続</span> を連続で押すと表示されます。開いたブラウザでの認証を先に完了するか、ブラウザのタブを閉じてからやり直してください。</p>
+    </div>
+    <div class="trouble-row">
+      <p class="msg">認証状態が一致しません。／認証結果が無効か、すでに使用されています。</p>
+      <p class="fix">認証のやり直しが必要です。一度使った認証結果は再利用できないため、IGUPで改めて <span class="btn-chip">Instagramに接続</span> を押してください。</p>
+    </div>
+    <div class="trouble-row">
+      <p class="msg">認証情報が無効か期限切れです。（ブラウザ側に表示）</p>
+      <p class="fix">認証の開始から時間が空きすぎた場合に表示されます。IGUPから改めて接続をやり直してください。</p>
+    </div>
+    <div class="trouble-row">
+      <p class="msg">この端末では安全な認証情報保存を利用できません。</p>
+      <p class="fix">お使いのPCでOS標準の暗号化機能が利用できない状態です。OSのセキュリティ設定をご確認ください。</p>
+    </div>
+    <div class="trouble-row">
+      <p class="msg">投稿内容が不正です。</p>
+      <p class="fix">画像URLまたはキャプションが未入力か、形式が正しくない可能性があります。入力内容をご確認ください。</p>
+    </div>
+    <div class="trouble-row">
+      <p class="msg">投稿時にエラーになる</p>
+      <p class="fix">指定した画像URLがHTTPSで公開アクセス可能か、Instagram側から取得できる状態かをご確認ください。</p>
+    </div>
+  </section>
+
+  <section class="spec" id="spec">
+    <h2>仕様</h2>
+    <div class="spec-table">
+      <div class="spec-row"><span class="k">必要なアカウント</span><span class="v">Instagramプロアカウント（ビジネス / クリエイター）</span></div>
+      <div class="spec-row"><span class="k">権限（スコープ）</span><span class="v">instagram_business_basic, instagram_business_content_publish</span></div>
+      <div class="spec-row"><span class="k">Graph APIバージョン</span><span class="v">v23.0</span></div>
+      <div class="spec-row"><span class="k">トークンの保存</span><span class="v">OS標準の暗号化機能でPC内にのみ保存</span></div>
+      <div class="spec-row"><span class="k">認証結果の保持</span><span class="v">認証サーバー側で最大5分・一度だけ交換可能</span></div>
+      <div class="spec-row"><span class="k">キャプション上限</span><span class="v">2,200文字</span></div>
+      <div class="spec-row"><span class="k">画像投稿の形式</span><span class="v">公開HTTPS画像URLのみ（ローカルアップロード不可）</span></div>
+    </div>
+  </section>
+
+  <footer class="note">
+    本書はIGUP初期版（v0.1.0）の操作ガイドです。画面表示や仕様は今後のアップデートで変更される場合があります。
+  </footer>
+
+</div>
