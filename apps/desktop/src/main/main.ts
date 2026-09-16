@@ -25,11 +25,13 @@ const services = new Services({
   onBrokerUrlChanged: (url) => auth.setUrl(url),
 });
 
-const auth = new DesktopAuth(brokerUrl, async (connection, provider) => {
-  await storage.save(connection, provider);
-  if (provider === "instagram") services.engine.invalidateAccount();
-  services.data.log("info", "system", `${provider === "threads" ? "Threads" : "Instagram"}と接続しました`);
-  notify("connection:changed", { provider });
+const auth = new DesktopAuth(brokerUrl, async (connection, provider, accountId) => {
+  try {
+    await services.completeConnection(connection, provider, accountId);
+  } catch (cause) {
+    services.data.log("error", "system", `${provider === "threads" ? "Threads" : "Instagram"}の接続処理に失敗しました`, cause instanceof Error ? cause.message : String(cause));
+    notify("connection:changed");
+  }
   mainWindow?.focus();
 });
 

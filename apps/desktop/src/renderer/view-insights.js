@@ -1,19 +1,21 @@
 /* Insights: post ranking + follower trend + story snapshots, tracked links, tap analytics. */
 (() => {
-  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, toast, copyText, openExternal, drawLineChart, drawBars } = IGUP;
+  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, toast, copyText, openExternal, drawLineChart, drawBars, accountChips, accountName, accounts } = IGUP;
   const TABS = [["posts", "投稿インサイト"], ["links", "計測リンク"], ["taps", "タップ分析"]];
   const SOURCES = [["instagram_story", "ストーリーズ"], ["instagram_dm", "DM"], ["instagram_profile", "プロフィール"], ["instagram_comment", "コメント"], ["threads", "Threads"], ["line", "LINE"], ["other", "その他"]];
   let tab = "posts";
+  let accountFilter = null;
   const METRIC_LABELS = { views: "再生/表示", reach: "リーチ", likes: "いいね", comments: "コメント", saved: "保存", shares: "シェア", total_interactions: "反応合計", replies: "返信", navigation: "操作", follows: "フォロー" };
 
   function metricCell(snapshot, key) { return h("td", { class: "num" }, snapshot.metrics[key] === undefined ? "—" : fmt.n(snapshot.metrics[key])); }
 
   async function renderPosts(box) {
-    const summary = await api("insights:summary");
+    const summary = await api("insights:summary", { ...(accountFilter ? { accountId: accountFilter } : {}) });
     const latest = summary.latest;
     const chart = h("canvas", { class: "chart" });
     const reachChart = h("canvas", { class: "chart" });
     replace(box,
+      accountChips(accountFilter, (value) => { accountFilter = value; IGUP.rerender(); }),
       h("div", { class: "row between", style: { marginBottom: "12px" } },
         h("p", { class: "muted small" }, `最終取得: ${summary.lastInsightsDate ?? "未取得"}（毎日3時以降に自動取得） / ストーリーズ: ${summary.lastStorySnapshotAt ? fmt.dateTime(summary.lastStorySnapshotAt) : "未取得"}`),
         h("button", { class: "secondary small", type: "button", onClick: (event) => guard(event.currentTarget, async () => { await api("insights:capture"); toast("インサイトを取得しました。"); IGUP.rerender(); }) }, "いま取得する"),
@@ -118,14 +120,17 @@
 
   async function renderTaps(box) {
     const rules = await api("rules:list");
+    const scoped = rules.filter((rule) => !accountFilter || rule.accountId === accountFilter);
+    const multi = accounts().length > 1;
     replace(box,
+      accountChips(accountFilter, (value) => { accountFilter = value; IGUP.rerender(); }),
       h("p", { class: "muted small" }, "自動返信ごとに「届いた → DMを送った → 見られた → ボタンが押された」を数えます。開封はInstagramの既読通知（Webhook利用時）、タップはリンクボタンではなく次のメッセージへ進むボタン・クイックリプライで計測します。"),
-      rules.length === 0 ? h("div", { class: "empty" }, "自動返信ルールがまだありません。") :
-        h("div", { class: "grid cols-2" }, rules.map((rule) => {
+      scoped.length === 0 ? h("div", { class: "empty" }, rules.length === 0 ? "自動返信ルールがまだありません。" : "該当するルールはありません。") :
+        h("div", { class: "grid cols-2" }, scoped.map((rule) => {
           const steps = [["届いた（マッチ）", rule.stats.matched], ["DMを送った", rule.stats.dmSent], ["見られた（既読）", rule.stats.read], ["押された", rule.stats.buttonTapped]];
           const max = Math.max(1, rule.stats.matched);
           return h("div", { class: "card" },
-            h("div", { class: "row between" }, h("h3", {}, rule.name), rule.enabled ? badge("有効", "ok") : badge("停止")),
+            h("div", { class: "row between" }, h("h3", {}, rule.name, multi && rule.accountId ? h("span", { class: "muted small", style: { marginLeft: "6px" } }, accountName(rule.accountId)) : null), rule.enabled ? badge("有効", "ok") : badge("停止")),
             h("div", { class: "funnel" }, steps.map(([label, value]) => h("div", { class: "bar" }, h("span", {}, label), h("div", { class: "track" }, h("div", { class: "fill", style: { width: `${Math.min(100, (value / max) * 100)}%` } })), h("span", { class: "n" }, fmt.n(value))))),
             h("p", { class: "hint" }, `公開返信 ${fmt.n(rule.stats.publicReplied)} / 時間差送信 ${fmt.n(rule.stats.followUpSent)} / 送信失敗 ${fmt.n(rule.stats.dmFailed)}`),
           );

@@ -138,7 +138,7 @@ export class Scheduler {
   // ---------------------------------------------------------------- Instagram
 
   private async publishInstagram(post: ScheduledPost): Promise<{ id: string; permalink: string | null }> {
-    const connection = await this.deps.secrets.load("instagram");
+    const connection = await this.deps.secrets.load("instagram", post.accountId);
     if (!connection) throw new Error("Instagramに接続されていません。");
     let containerId: string;
     switch (post.kind) {
@@ -229,9 +229,9 @@ export class Scheduler {
   // ---------------------------------------------------------------- Threads
 
   private async publishThreads(post: ScheduledPost): Promise<{ id: string; permalink: string | null }> {
-    const connection = await this.deps.secrets.load("threads");
+    const connection = await this.deps.secrets.load("threads", post.accountId);
     if (!connection) throw new Error("Threadsに接続されていません。設定画面から接続してください。");
-    const instagramConnection = await this.deps.secrets.load("instagram");
+    const instagramConnection = await this.deps.secrets.load("instagram", post.accountId);
     let previousId: string | null = null;
     let rootId: string | null = null;
     for (const [index, item] of post.threads.entries()) {
@@ -309,7 +309,7 @@ export class Scheduler {
   }
 
   private async cleanupBrokerMedia(post: ScheduledPost): Promise<void> {
-    const connection = await this.deps.secrets.load("instagram").catch(() => null);
+    const connection = await this.deps.secrets.load("instagram", post.accountId).catch(() => null);
     if (!connection) return;
     const assets = [...post.media, ...(post.cover ? [post.cover] : []), ...post.threads.flatMap((item) => item.media)];
     for (const asset of assets) {

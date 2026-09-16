@@ -188,6 +188,53 @@ window.IGUP = (() => {
     return navigator.clipboard.writeText(text).then(() => toast("コピーしました")).catch(() => toast("コピーできませんでした", true));
   }
 
+  // ---------------------------------------------------------------- accounts
+
+  function accounts() {
+    return state.status?.accounts ?? [];
+  }
+
+  function activeAccountId() {
+    return state.activeAccountId ?? accounts()[0]?.id ?? null;
+  }
+
+  function accountName(id) {
+    if (!id) return "";
+    const entry = accounts().find((account) => account.id === id);
+    if (!entry) return id;
+    return entry.username ? `@${entry.username}` : id;
+  }
+
+  /** Filter chip row for list views; hidden while there is only one account. current=null shows every account. */
+  function accountChips(current, onChange) {
+    const list = accounts();
+    if (list.length <= 1) return null;
+    const box = h("div", { class: "row wrap", style: { gap: "6px", marginBottom: "12px" } });
+    const entries = [{ id: null, label: "すべて" }, ...list.map((account) => ({ id: account.id, label: accountName(account.id) || account.id }))];
+    for (const entry of entries) {
+      box.append(h("button", {
+        type: "button",
+        class: `filter-chip${(current ?? null) === entry.id ? " active" : ""}`,
+        onClick: (event) => {
+          for (const child of box.children) child.classList.remove("active");
+          event.currentTarget.classList.add("active");
+          onChange(entry.id);
+        },
+      }, entry.label));
+    }
+    return box;
+  }
+
+  /** <select> for editors; defaults to the active account. */
+  function accountSelect(current, onChange) {
+    const list = accounts();
+    if (list.length === 0) return null;
+    const select = h("select", { onChange: (event) => onChange?.(event.target.value) },
+      list.map((account) => h("option", { value: account.id, selected: (current ?? activeAccountId()) === account.id }, accountName(account.id) || account.id)),
+    );
+    return select;
+  }
+
   function openExternal(url) {
     return api("app:openExternal", { url }).catch(fail);
   }
@@ -266,5 +313,5 @@ window.IGUP = (() => {
     });
   }
 
-  return { views, state, api, h, append, clear, replace, toast, fail, guard, errorMessage, openModal, confirmDialog, fmt, toLocalInput, fromLocalInput, dateKey, POST_KIND, POST_STATUS, SOURCE_LABELS, pageHead, field, switchControl, badge, copyText, openExternal, drawLineChart, drawBars };
+  return { views, state, api, h, append, clear, replace, toast, fail, guard, errorMessage, openModal, confirmDialog, fmt, toLocalInput, fromLocalInput, dateKey, POST_KIND, POST_STATUS, SOURCE_LABELS, pageHead, field, switchControl, badge, copyText, openExternal, drawLineChart, drawBars, accounts, activeAccountId, accountName, accountChips, accountSelect };
 })();

@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer, webUtils } = require("electron");
 const CHANNELS = new Set([
   "app:info", "app:openExternal", "app:pickFiles", "app:saveFile", "app:readFile",
   "connection:status", "connection:start", "connection:disconnect", "connection:subscribeWebhooks", "connection:capabilities", "line:save",
+  "accounts:setActive", "accounts:remove",
   "instagram:account", "instagram:media", "threads:profile",
   "rules:list", "rules:save", "rules:delete", "rules:test", "rules:chainPayload",
   "automation:status", "automation:setEnabled", "automation:runOnce",

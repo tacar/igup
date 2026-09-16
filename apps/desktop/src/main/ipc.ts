@@ -48,15 +48,18 @@ export function ipcHandlers(services: Services, auth: DesktopAuth, window: () =>
     },
 
     "connection:status": () => services.connectionStatus(),
-    "connection:start": (payload) => auth.start((text(record(payload).provider, "instagram") as Provider)),
-    "connection:disconnect": (payload) => services.disconnect(text(record(payload).provider, "instagram") as Provider),
-    "connection:subscribeWebhooks": () => services.subscribeWebhooks(),
+    "connection:start": (payload) => auth.start((text(record(payload).provider, "instagram") as Provider), text(record(payload).accountId) || null),
+    "connection:disconnect": (payload) => services.disconnect(text(record(payload).provider, "instagram") as Provider, text(record(payload).accountId) || undefined),
+    "connection:subscribeWebhooks": (payload) => services.subscribeWebhooks(text(record(payload).accountId) || undefined),
     "connection:capabilities": () => services.capabilities(true),
     "line:save": (payload) => services.saveLineToken(text(record(payload).token) || null),
 
-    "instagram:account": () => services.account(),
-    "instagram:media": (payload) => services.recentMedia(Number(record(payload).limit ?? 25)),
-    "threads:profile": () => services.threadsProfile(),
+    "accounts:setActive": (payload) => services.setActiveAccount(text(record(payload).accountId)),
+    "accounts:remove": (payload) => services.removeAccount(text(record(payload).accountId)),
+
+    "instagram:account": (payload) => services.account(text(record(payload).accountId) || undefined),
+    "instagram:media": (payload) => services.recentMedia(Number(record(payload).limit ?? 25), text(record(payload).accountId) || undefined),
+    "threads:profile": (payload) => services.threadsProfile(text(record(payload).accountId) || undefined),
 
     "rules:list": () => services.listRules(),
     "rules:save": (payload) => services.saveRule(record(payload) as Partial<Rule>),
@@ -86,7 +89,7 @@ export function ipcHandlers(services: Services, auth: DesktopAuth, window: () =>
     "memos:save": (payload) => services.saveMemo(record(payload) as Partial<CalendarMemo>),
     "memos:delete": (payload) => services.deleteMemo(text(record(payload).id)),
 
-    "insights:summary": () => services.insights.summary(),
+    "insights:summary": (payload) => services.insights.summary(text(record(payload).accountId) || undefined),
     "insights:capture": async () => {
       await services.insights.captureDaily();
       await services.insights.captureStories();
@@ -134,6 +137,7 @@ export function registerIpc(handlers: Record<string, Handler>): void {
 export const IPC_CHANNELS = [
   "app:info", "app:openExternal", "app:pickFiles", "app:saveFile", "app:readFile",
   "connection:status", "connection:start", "connection:disconnect", "connection:subscribeWebhooks", "connection:capabilities", "line:save",
+  "accounts:setActive", "accounts:remove",
   "instagram:account", "instagram:media", "threads:profile",
   "rules:list", "rules:save", "rules:delete", "rules:test", "rules:chainPayload",
   "automation:status", "automation:setEnabled", "automation:runOnce",

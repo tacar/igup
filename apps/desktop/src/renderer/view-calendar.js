@@ -1,9 +1,10 @@
 /* Month calendar: scheduled posts colored by kind, plus free-form memos. */
 (() => {
-  const { api, h, replace, fmt, pageHead, guard, field, openModal, toast, dateKey, POST_KIND, POST_STATUS, badge } = IGUP;
+  const { api, h, replace, fmt, pageHead, guard, field, openModal, toast, dateKey, POST_KIND, POST_STATUS, badge, accountChips } = IGUP;
   const MEMO_COLORS = ["#6b7280", "#2563eb", "#059669", "#d97706", "#dc2626", "#7c3aed", "#db2777"];
   let cursor = new Date();
   cursor.setDate(1);
+  let accountFilter = null;
 
   function openMemoEditor(existing, date) {
     const memo = existing ? { ...existing } : { date, title: "", note: "", color: MEMO_COLORS[0] };
@@ -50,7 +51,7 @@
       ),
       footer: [
         h("button", { class: "ghost", type: "button", onClick: () => { dialog.close(); openMemoEditor(null, key); } }, "＋ メモ"),
-        h("button", { type: "button", onClick: () => { dialog.close(); IGUP.posts.openEditor(null, { defaults: { scheduledAt: at.toISOString() } }); } }, "＋ この日に投稿を予約"),
+        h("button", { type: "button", onClick: () => { dialog.close(); IGUP.posts.openEditor(null, { defaults: { scheduledAt: at.toISOString(), ...(accountFilter ? { accountId: accountFilter } : {}) } }); } }, "＋ この日に投稿を予約"),
       ],
     });
   }
@@ -65,8 +66,9 @@
     icon: "▦",
     async render(container) {
       const [posts, memos] = await Promise.all([api("posts:list"), api("memos:list")]);
+      const scoped = posts.filter((post) => !accountFilter || post.accountId === accountFilter);
       const byDay = new Map();
-      for (const post of posts) {
+      for (const post of scoped) {
         if (post.status === "canceled") continue;
         const key = dateKey(new Date(post.scheduledAt));
         if (!byDay.has(key)) byDay.set(key, { posts: [], memos: [] });
@@ -99,6 +101,7 @@
           h("button", { class: "secondary", type: "button", onClick: () => { cursor = new Date(year, month + 1, 1); IGUP.rerender(); } }, "翌月 ›"),
           h("button", { type: "button", onClick: () => openMemoEditor(null, todayKey) }, "＋ メモ"),
         ),
+        accountChips(accountFilter, (value) => { accountFilter = value; IGUP.rerender(); }),
         h("div", { class: "card" },
           h("div", { class: "row between", style: { marginBottom: "12px" } },
             h("h2", {}, `${year}年${month + 1}月`),

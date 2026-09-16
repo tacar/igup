@@ -55,6 +55,8 @@
     } catch (error) {
       state.status = null;
     }
+    if (state.status?.activeAccountId) state.activeAccountId = state.status.activeAccountId;
+    renderAccountSwitch();
     const auto = document.getElementById("automation-pill");
     const conn = document.getElementById("connection-pill");
     const status = state.status;
@@ -63,6 +65,29 @@
     auto.className = `pill ${enabled ? "on" : "off"}`;
     conn.textContent = status?.instagram?.connected ? "Instagram: 接続済み" : "Instagram: 未接続";
     conn.className = `pill ${status?.instagram?.connected ? "on" : "bad"}`;
+  }
+
+  function renderAccountSwitch() {
+    const box = document.getElementById("account-switch");
+    const list = state.status?.accounts ?? [];
+    if (list.length === 0) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    const { h, replace, accountName } = IGUP;
+    replace(box,
+      h("select", {
+        "aria-label": "アカウント",
+        onChange: (event) => {
+          void IGUP.api("accounts:setActive", { accountId: event.target.value }).then(() => refreshStatus()).catch(IGUP.fail);
+        },
+      }, list.map((account) => h("option", {
+        value: account.id,
+        selected: account.id === (state.activeAccountId ?? state.status?.activeAccountId),
+      }, `${accountName(account.id)}${account.instagram.connected ? "" : "（未接続）"}`))),
+      h("button", { class: "ghost", type: "button", title: "アカウントを追加", onClick: () => void navigate("connect") }, "＋"),
+    );
   }
 
   let rerenderTimer;

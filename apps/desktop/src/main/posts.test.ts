@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { assetHasSource, contentTypeFor, isDue, isImageFile, isMissed, isVideoFile, validatePost } from "./posts.js";
-import type { MediaAsset, ScheduledPost } from "./types.js";
+import { DEFAULT_ACCOUNT_ID, type MediaAsset, type ScheduledPost } from "./types.js";
 
 function asset(overrides: Partial<MediaAsset> = {}): MediaAsset {
   return { id: "a1", kind: "image", url: "https://example.com/a.jpg", localPath: null, brokerId: null, fileName: "a.jpg", size: 100, ...overrides };
@@ -9,6 +9,7 @@ function asset(overrides: Partial<MediaAsset> = {}): MediaAsset {
 function post(overrides: Partial<ScheduledPost> = {}): ScheduledPost {
   return {
     id: "post_1",
+    accountId: DEFAULT_ACCOUNT_ID,
     kind: "image",
     scheduledAt: "2024-01-01T00:00:00.000Z",
     status: "scheduled",

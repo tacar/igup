@@ -5,6 +5,20 @@ export type Connection = {
 
 export type Provider = "instagram" | "threads";
 
+/**
+ * Local, stable key for one Instagram (optionally + Threads) connection.
+ * Existing single-account data belongs to this account after migration.
+ */
+export const DEFAULT_ACCOUNT_ID = "acc_default";
+
+export type AccountInfo = {
+  id: string;
+  username: string;
+  graphId: string | null;
+  threadsUsername: string | null;
+  addedAt: string;
+};
+
 export type Account = {
   id: string;
   user_id?: string;
@@ -52,6 +66,7 @@ export type RuleStats = {
 
 export type Rule = {
   id: string;
+  accountId: string;
   name: string;
   enabled: boolean;
   sources: RuleSource[];
@@ -85,6 +100,7 @@ export type ThreadsItem = { text: string; media: MediaAsset[] };
 
 export type ScheduledPost = {
   id: string;
+  accountId: string;
   kind: PostKind;
   scheduledAt: string;
   status: PostStatus;
@@ -113,6 +129,7 @@ export type CalendarMemo = {
 
 export type PendingMessage = {
   id: string;
+  accountId: string;
   ruleId: string;
   recipientId: string;
   dueAt: string;
@@ -133,6 +150,7 @@ export type LogEntry = {
 };
 
 export type AccountSnapshot = {
+  accountId: string;
   date: string;
   capturedAt: string;
   followers: number | null;
@@ -145,6 +163,7 @@ export type AccountSnapshot = {
 };
 
 export type MediaSnapshot = {
+  accountId: string;
   mediaId: string;
   date: string;
   capturedAt: string;
@@ -158,6 +177,7 @@ export type MediaSnapshot = {
 };
 
 export type StorySnapshot = {
+  accountId: string;
   storyId: string;
   capturedAt: string;
   timestamp: string | null;
@@ -195,6 +215,7 @@ export type SeminarApplication = {
 
 export type Seminar = {
   id: string;
+  accountId: string;
   title: string;
   description: string;
   dates: SeminarDate[];
@@ -237,7 +258,9 @@ export type Settings = {
 };
 
 export type AppData = {
-  version: 1;
+  version: 2;
+  accounts: AccountInfo[];
+  activeAccountId: string | null;
   settings: Settings;
   rules: Rule[];
   posts: ScheduledPost[];
@@ -251,9 +274,10 @@ export type AppData = {
   links: TrackedLink[];
   cooldowns: Record<string, string>;
   contacts: Record<string, Contact>;
-  seen: { comments: string[]; messages: string[]; brokerCursor: number };
-  lastInsightsDate: string | null;
-  lastStorySnapshotAt: string | null;
+  seen: { comments: string[]; messages: string[] };
+  cursors: Record<string, number>;
+  lastInsightsDate: Record<string, string>;
+  lastStorySnapshotAt: Record<string, string>;
   automationSince: string | null;
 };
 
@@ -302,7 +326,9 @@ export function emptyMessage(): OutgoingMessage {
 
 export function emptyData(): AppData {
   return {
-    version: 1,
+    version: 2,
+    accounts: [],
+    activeAccountId: null,
     settings: { ...DEFAULT_SETTINGS },
     rules: [],
     posts: [],
@@ -316,9 +342,10 @@ export function emptyData(): AppData {
     links: [],
     cooldowns: {},
     contacts: {},
-    seen: { comments: [], messages: [], brokerCursor: 0 },
-    lastInsightsDate: null,
-    lastStorySnapshotAt: null,
+    seen: { comments: [], messages: [] },
+    cursors: {},
+    lastInsightsDate: {},
+    lastStorySnapshotAt: {},
     automationSince: null,
   };
 }

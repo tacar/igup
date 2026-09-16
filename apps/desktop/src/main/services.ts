@@ -17,10 +17,14 @@ import { ThreadsClient } from "./threads-client.js";
 import {
   emptyMessage,
   emptyStats,
+  DEFAULT_ACCOUNT_ID,
   DEFAULT_SETTINGS,
+  type Account,
+  type AccountInfo,
   type AppData,
   type BrokerCapabilities,
   type CalendarMemo,
+  type Connection,
   type MediaAsset,
   type Provider,
   type Rule,
@@ -114,15 +118,28 @@ export class Services {
   }
 
   async connectionStatus() {
-    const [instagram, threads, lineToken] = await Promise.all([
-      this.options.secrets.load("instagram"),
-      this.options.secrets.load("threads"),
-      this.options.secrets.loadLineChannelToken(),
-    ]);
+    const lineToken = await this.options.secrets.loadLineChannelToken();
     const capabilities = await this.capabilities();
+    const accounts: { id: string; username: string; instagram: { connected: boolean; expiresAt: string | null }; threads: { connected: boolean; expiresAt: string | null } }[] = [];
+    for (const account of this.data.get().accounts) {
+      const [instagram, threads] = await Promise.all([
+        this.options.secrets.load("instagram", account.id),
+        this.options.secrets.load("threads", account.id),
+      ]);
+      accounts.push({
+        id: account.id,
+        username: account.username,
+        instagram: { connected: Boolean(instagram), expiresAt: instagram?.expiresAt ?? null },
+        threads: { connected: Boolean(threads), expiresAt: threads?.expiresAt ?? null },
+      });
+    }
+    const active = accounts.find((entry) => entry.id === this.activeAccountId()) ?? accounts[0] ?? null;
     return {
-      instagram: { connected: Boolean(instagram), expiresAt: instagram?.expiresAt ?? null },
-      threads: { connected: Boolean(threads), expiresAt: threads?.expiresAt ?? null },
+      accounts,
+      activeAccountId: active?.id ?? null,
+      // legacy single-account mirror fields — kept so the renderer and local API stay compatible
+      instagram: active?.instagram ?? { connected: false, expiresAt: null },
+      threads: active?.threads ?? { connected: false, expiresAt: null },
       line: { configured: Boolean(lineToken) },
       broker: { url: this.broker.brokerUrl, reachable: capabilities !== null, capabilities },
       automation: this.engine.status(),
@@ -140,31 +157,164 @@ export class Services {
     return this.capabilitiesCache.value;
   }
 
-  async disconnect(provider: Provider): Promise<void> {
-    await this.options.secrets.remove(provider);
-    if (provider === "instagram") this.engine.invalidateAccount();
+  // ---------------------------------------------------------------- accounts
+
+  listAccounts(): AccountInfo[] {
+    return this.data.get().accounts;
+  }
+
+  /** The account new data is attributed to when the caller does not name one. */
+  activeAccountId(): string {
+    const data = this.data.get();
+    if (data.activeAccountId && data.accounts.some((account) => account.id === data.activeAccountId)) return data.activeAccountId;
+    return data.accounts[0]?.id ?? DEFAULT_ACCOUNT_ID;
+  }
+
+  /** Resolves a caller-supplied id to a known account, falling back to the active one. */
+  private resolveAccountId(input?: string | null): string {
+    if (input && this.data.get().accounts.some((account) => account.id === input)) return input;
+    return this.activeAccountId();
+  }
+
+  setActiveAccount(accountId: string): void {
+    if (!this.data.get().accounts.some((account) => account.id === accountId)) throw new Error("アカウントが見つかりません。");
+    this.data.update((data) => {
+      data.activeAccountId = accountId;
+    }, "accounts:changed");
+    this.options.notify("connection:changed");
+  }
+
+  /** Removes an account and everything scoped to it. Scheduled posts block removal. */
+  removeAccount(accountId: string): void {
+    const data = this.data.get();
+    if (!data.accounts.some((account) => account.id === accountId)) throw new Error("アカウントが見つかりません。");
+    if (data.accounts.length <= 1) throw new Error("最後のアカウントは削除できません。接続を解除してください。");
+    const scheduled = data.posts.filter((post) => post.accountId === accountId && (post.status === "scheduled" || post.status === "publishing")).length;
+    if (scheduled > 0) throw new Error(`このアカウントには予約中の投稿が${scheduled}件あります。先に予約を取り消してください。`);
+    const removedRules = data.rules.filter((rule) => rule.accountId === accountId).map((rule) => rule.id);
+    const prefix = `${accountId}:`;
+    this.data.update((store) => {
+      store.accounts = store.accounts.filter((account) => account.id !== accountId);
+      if (store.activeAccountId === accountId) store.activeAccountId = store.accounts[0]?.id ?? null;
+      store.rules = store.rules.filter((rule) => rule.accountId !== accountId);
+      store.posts = store.posts.filter((post) => post.accountId !== accountId);
+      store.seminars = store.seminars.filter((seminar) => seminar.accountId !== accountId);
+      store.pending = store.pending.filter((item) => item.accountId === accountId || !removedRules.includes(item.ruleId));
+      store.accountSnapshots = store.accountSnapshots.filter((item) => item.accountId !== accountId);
+      store.mediaSnapshots = store.mediaSnapshots.filter((item) => item.accountId !== accountId);
+      store.storySnapshots = store.storySnapshots.filter((item) => item.accountId !== accountId);
+      store.cursors = Object.fromEntries(Object.entries(store.cursors).filter(([key]) => key !== accountId));
+      store.lastInsightsDate = Object.fromEntries(Object.entries(store.lastInsightsDate).filter(([key]) => key !== accountId));
+      store.lastStorySnapshotAt = Object.fromEntries(Object.entries(store.lastStorySnapshotAt).filter(([key]) => key !== accountId));
+      store.cooldowns = Object.fromEntries(Object.entries(store.cooldowns).filter(([key]) => !key.startsWith(prefix)));
+      store.contacts = Object.fromEntries(Object.entries(store.contacts).filter(([key]) => !key.startsWith(prefix)));
+      store.seen = {
+        comments: store.seen.comments.filter((id) => !id.startsWith(prefix)),
+        messages: store.seen.messages.filter((id) => !id.startsWith(prefix)),
+      };
+    }, "accounts:changed");
+    for (const provider of ["instagram", "threads"] as const) {
+      void this.options.secrets.remove(provider, accountId).catch(() => undefined);
+    }
+    this.engine.invalidateAccount(accountId);
+    this.data.log("info", "system", "アカウントとそのデータ（ルール・投稿・分析）を削除しました");
+    this.options.notify("connection:changed");
+  }
+
+  /**
+   * Stores an OAuth result and decides which local account it belongs to: an explicit
+   * accountId (reconnect from that account's card), an existing account already known
+   * under the same Graph id, or a brand-new account.
+   */
+  async completeConnection(connection: Connection, provider: Provider, accountId: string | null): Promise<void> {
+    let target: AccountInfo;
+    let created = false;
+    if (provider === "instagram") {
+      let graph: Account | null = null;
+      try {
+        graph = await this.instagram.getAccount(connection);
+      } catch {
+        graph = null; // still store the token; identification can catch up on the next reconnect
+      }
+      const data = this.data.get();
+      const graphId = graph?.id ?? null;
+      const knownId = accountId ?? (graphId ? data.accounts.find((account) => account.graphId && account.graphId === graphId)?.id ?? null : null);
+      const existing = knownId ? data.accounts.find((account) => account.id === knownId) : undefined;
+      if (existing) {
+        target = existing;
+      } else {
+        target = { id: newId("acc"), username: graph?.username ?? "", graphId: graph?.id ?? null, threadsUsername: null, addedAt: nowIso() };
+        created = true;
+      }
+      await this.options.secrets.save(connection, "instagram", target.id);
+      if (graph) {
+        target.username = graph.username ?? target.username;
+        target.graphId = graph.id;
+      }
+      this.data.update((data) => {
+        if (!data.accounts.some((account) => account.id === target.id)) data.accounts.push(target);
+        data.activeAccountId = target.id;
+        data.cursors[target.id] = 0; // a fresh OAuth grant means a fresh broker event queue
+      }, "accounts:changed");
+      this.engine.invalidateAccount(target.id);
+    } else {
+      const data = this.data.get();
+      const knownId = accountId ?? data.activeAccountId ?? data.accounts[0]?.id ?? null;
+      const existing = knownId ? data.accounts.find((account) => account.id === knownId) : undefined;
+      if (existing) {
+        target = existing;
+      } else {
+        target = { id: newId("acc"), username: "", graphId: null, threadsUsername: null, addedAt: nowIso() };
+        created = true;
+      }
+      await this.options.secrets.save(connection, "threads", target.id);
+      try {
+        const profile = await this.threads.getProfile(connection);
+        target.threadsUsername = profile.username ?? target.threadsUsername;
+      } catch {
+        // the username cache is best effort
+      }
+      this.data.update((data) => {
+        if (!data.accounts.some((account) => account.id === target.id)) data.accounts.push(target);
+        data.activeAccountId = target.id;
+      }, "accounts:changed");
+    }
+    this.data.log("info", "system", `${provider === "threads" ? "Threads" : "Instagram"}と接続しました${created ? "（アカウントを追加しました）" : ""}`);
+    this.options.notify("connection:changed", { provider });
+  }
+
+  async disconnect(provider: Provider, accountId?: string): Promise<void> {
+    const id = this.resolveAccountId(accountId);
+    await this.options.secrets.remove(provider, id);
+    if (provider === "instagram") this.engine.invalidateAccount(id);
     this.data.log("info", "system", `${provider === "threads" ? "Threads" : "Instagram"}との接続を解除しました`);
     this.options.notify("connection:changed");
   }
 
-  async account() {
-    const connection = await this.requireInstagram();
+  private async requireConnection(provider: Provider = "instagram", accountId?: string): Promise<{ accountId: string; connection: Connection }> {
+    const id = this.resolveAccountId(accountId);
+    const connection = await this.options.secrets.load(provider, id);
+    if (!connection) throw new Error(provider === "instagram" ? "先にInstagramへ接続してください。" : "先にThreadsへ接続してください。");
+    return { accountId: id, connection };
+  }
+
+  async account(accountId?: string) {
+    const { connection } = await this.requireConnection("instagram", accountId);
     return this.instagram.getAccount(connection);
   }
 
-  async threadsProfile() {
-    const connection = await this.options.secrets.load("threads");
-    if (!connection) throw new Error("Threadsに接続されていません。");
+  async threadsProfile(accountId?: string) {
+    const { connection } = await this.requireConnection("threads", accountId);
     return this.threads.getProfile(connection);
   }
 
-  async recentMedia(limit = 25) {
-    const connection = await this.requireInstagram();
+  async recentMedia(limit = 25, accountId?: string) {
+    const { connection } = await this.requireConnection("instagram", accountId);
     return (await this.instagram.listMedia(connection, limit)).data;
   }
 
-  async subscribeWebhooks(): Promise<{ success: boolean }> {
-    const connection = await this.requireInstagram();
+  async subscribeWebhooks(accountId?: string): Promise<{ success: boolean }> {
+    const { connection } = await this.requireConnection("instagram", accountId);
     const result = await this.instagram.subscribeWebhooks(connection, "comments,live_comments,messages,messaging_postbacks,messaging_seen,message_reactions");
     this.data.log("info", "system", "Webhook購読を登録しました");
     await this.engine.detectWebhookMode();
@@ -184,12 +334,6 @@ export class Services {
     return { displayName: null };
   }
 
-  private async requireInstagram() {
-    const connection = await this.options.secrets.load("instagram");
-    if (!connection) throw new Error("先にInstagramへ接続してください。");
-    return connection;
-  }
-
   // ---------------------------------------------------------------- rules
 
   listRules(): Rule[] {
@@ -200,6 +344,7 @@ export class Services {
     const existing = input.id ? this.data.get().rules.find((rule) => rule.id === input.id) : undefined;
     const rule: Rule = {
       id: existing?.id ?? newId("rule"),
+      accountId: existing?.accountId ?? this.resolveAccountId(input.accountId),
       name: String(input.name ?? existing?.name ?? "").trim(),
       enabled: input.enabled ?? existing?.enabled ?? true,
       sources: input.sources ?? existing?.sources ?? ["comment"],
@@ -247,6 +392,7 @@ export class Services {
     if (existing && (existing.status === "publishing")) throw new Error("投稿中の予約は編集できません。");
     const post: ScheduledPost = {
       id: existing?.id ?? newId("post"),
+      accountId: existing?.accountId ?? this.resolveAccountId(input.accountId),
       kind: input.kind ?? existing?.kind ?? "image",
       scheduledAt: input.scheduledAt ?? existing?.scheduledAt ?? nowIso(),
       status: "scheduled",
@@ -381,7 +527,7 @@ export class Services {
   // ---------------------------------------------------------------- links
 
   async listLinks() {
-    const connection = await this.requireInstagram();
+    const { connection } = await this.requireConnection("instagram");
     const result = await this.broker.listLinks(connection);
     this.data.update((data) => {
       data.links = result.links;
@@ -391,7 +537,7 @@ export class Services {
 
   async createLink(input: { url: string; label: string; source: string; slug?: string }) {
     if (!/^https?:\/\//.test(input.url)) throw new Error("リンク先URLは http(s):// から入力してください。");
-    const connection = await this.requireInstagram();
+    const { connection } = await this.requireConnection("instagram");
     const result = await this.broker.createLink(connection, input);
     this.data.log("info", "link", `計測リンクを作成しました: ${result.link.trackedUrl}`, input.url);
     await this.listLinks();
@@ -399,7 +545,7 @@ export class Services {
   }
 
   async deleteLink(slug: string) {
-    const connection = await this.requireInstagram();
+    const { connection } = await this.requireConnection("instagram");
     await this.broker.deleteLink(connection, slug);
     await this.listLinks();
   }

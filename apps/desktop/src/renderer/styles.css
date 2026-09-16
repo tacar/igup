@@ -152,6 +152,19 @@ tr:hover td { background: color-mix(in srgb, var(--surface-2) 60%, transparent);
 .badge.info { background: var(--info-soft); color: var(--info); }
 .badge.accent { background: var(--accent-soft); color: var(--accent); }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #fff; }
+.filter-chip { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 700; cursor: pointer; }
+.filter-chip:hover { border-color: var(--accent-line); color: var(--ink); }
+.filter-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.account-switch { display: flex; gap: 6px; align-items: center; }
+.account-switch select { max-width: 150px; font-size: 12px; padding: 4px 6px; }
+.account-list { display: grid; gap: 10px; }
+.account-row { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); align-items: center; }
+.account-row.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.account-row .name { font-weight: 700; }
+.account-row .name .mono { font-size: 11px; color: var(--ink-3); }
+.account-row .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.account-row .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
 .switch { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; }
 .switch input { position: absolute; opacity: 0; width: 0; height: 0; }

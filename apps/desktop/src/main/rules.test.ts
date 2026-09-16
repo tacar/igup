@@ -12,11 +12,12 @@ import {
   validateRule,
   withinMessagingWindow,
 } from "./rules.js";
-import { emptyMessage, emptyStats, type Rule } from "./types.js";
+import { DEFAULT_ACCOUNT_ID, emptyMessage, emptyStats, type Rule } from "./types.js";
 
 function rule(overrides: Partial<Rule> = {}): Rule {
   return {
     id: "rule_1",
+    accountId: DEFAULT_ACCOUNT_ID,
     name: "価格案内",
     enabled: true,
     sources: ["dm"],

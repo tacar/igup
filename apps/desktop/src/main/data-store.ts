@@ -1,11 +1,15 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { emptyData, DEFAULT_SETTINGS, type AppData, type LogCategory, type LogEntry } from "./types.js";
+import { DEFAULT_ACCOUNT_ID, emptyData, DEFAULT_SETTINGS, type AccountInfo, type AppData, type LogCategory, type LogEntry } from "./types.js";
 import { newId, nowIso } from "./ids.js";
 
 const LOG_LIMIT = 2_000;
 const SEEN_LIMIT = 5_000;
 const WRITE_DELAY_MS = 250;
+
+const COLLECTION_KEYS = ["rules", "posts", "memos", "pending", "logs", "accountSnapshots", "mediaSnapshots", "storySnapshots", "seminars", "links"] as const;
+/** Collections whose elements carry an accountId that must exist after migration. */
+const ACCOUNT_SCOPED_KEYS = new Set(["rules", "posts", "pending", "accountSnapshots", "mediaSnapshots", "storySnapshots", "seminars"]);
 
 export type DataListener = (event: { type: string; payload?: unknown }) => void;
 
@@ -27,14 +31,27 @@ export class DataStore {
   }
 
   async load(): Promise<void> {
+    let raw: string;
     try {
-      const parsed = JSON.parse(await readFile(this.filePath, "utf8")) as Partial<AppData>;
-      this.data = normalize(parsed);
+      raw = await readFile(this.filePath, "utf8");
     } catch (cause) {
       const code = cause && typeof cause === "object" && "code" in cause ? cause.code : null;
       if (code !== "ENOENT") throw new Error("保存データを読み込めませんでした。", { cause });
       this.data = emptyData();
+      return;
     }
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+    const isCurrent = Boolean(parsed && typeof parsed === "object" && (parsed as { version?: unknown }).version === 2);
+    if (parsed && !isCurrent) {
+      // keep the pre-migration file around once, in case the user wants to roll back
+      await writeFile(join(dirname(this.filePath), "igup-data.v1.bak.json"), raw, { encoding: "utf8", mode: 0o600 }).catch(() => undefined);
+    }
+    this.data = parsed ? normalize(parsed) : emptyData();
   }
 
   get(): AppData {
@@ -123,15 +140,118 @@ export class DataStore {
   }
 }
 
-export function normalize(input: Partial<AppData>): AppData {
-  const base = emptyData();
-  const data: AppData = { ...base, ...input, version: 1 };
-  data.settings = { ...DEFAULT_SETTINGS, ...(input.settings ?? {}) };
-  data.seen = { ...base.seen, ...(input.seen ?? {}) };
-  for (const key of ["rules", "posts", "memos", "pending", "logs", "accountSnapshots", "mediaSnapshots", "storySnapshots", "seminars", "links"] as const) {
-    if (!Array.isArray(data[key])) (data as unknown as Record<string, unknown>)[key] = [];
+function stringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function accountInfoOf(value: unknown): AccountInfo | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<AccountInfo>;
+  if (typeof candidate.id !== "string" || !candidate.id) return null;
+  return {
+    id: candidate.id,
+    username: typeof candidate.username === "string" ? candidate.username : "",
+    graphId: typeof candidate.graphId === "string" ? candidate.graphId : null,
+    threadsUsername: typeof candidate.threadsUsername === "string" ? candidate.threadsUsername : null,
+    addedAt: typeof candidate.addedAt === "string" ? candidate.addedAt : nowIso(),
+  };
+}
+
+/** Records keyed by bare user id (v1) are re-keyed under the owning account. Already-prefixed keys pass through. */
+function prefixedRecord<T>(value: unknown, accountId: string): Record<string, T> {
+  const out: Record<string, T> = {};
+  if (!value || typeof value !== "object") return out;
+  for (const [key, entry] of Object.entries(value)) {
+    out[key.includes(":") ? key : `${accountId}:${key}`] = entry as T;
   }
-  if (!data.cooldowns || typeof data.cooldowns !== "object") data.cooldowns = {};
-  if (!data.contacts || typeof data.contacts !== "object") data.contacts = {};
+  return out;
+}
+
+function recordOfStrings(value: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!value || typeof value !== "object") return out;
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "string") out[key] = entry;
+  }
+  return out;
+}
+
+function recordOfNumbers(value: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!value || typeof value !== "object") return out;
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "number" && Number.isFinite(entry)) out[key] = entry;
+  }
+  return out;
+}
+
+/** Legacy single-string fields (lastInsightsDate, lastStorySnapshotAt) become per-account records. */
+function recordFromLegacyField(value: unknown, accountId: string): Record<string, string> {
+  if (value && typeof value === "object") return recordOfStrings(value);
+  return typeof value === "string" && value ? { [accountId]: value } : {};
+}
+
+function collectionOf(value: unknown, accountId: string): unknown[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({ accountId, ...(item as object) }));
+}
+
+/**
+ * Pure upgrade of a v1 (single-account) data file to the v2 multi-account shape.
+ * All pre-existing rules/posts/snapshots land on acc_default, contact & cooldown keys
+ * gain the account prefix, and the broker event cursor is seeded for that account.
+ * Tolerant of already-migrated v2 input so it can double as a repair path.
+ */
+export function migrateV1toV2(input: unknown): AppData {
+  const source = (input ?? {}) as Partial<AppData> & {
+    seen?: { comments?: unknown; messages?: unknown; brokerCursor?: unknown };
+  };
+  const data = emptyData();
+  data.settings = { ...DEFAULT_SETTINGS, ...(source.settings ?? {}) };
+
+  const accounts = Array.isArray(source.accounts) ? source.accounts.map(accountInfoOf).filter((a): a is AccountInfo => a !== null) : [];
+  if (accounts.length > 0) {
+    data.accounts = accounts;
+  } else {
+    // v1 had exactly one implicit connection; give it a stable local identity.
+    data.accounts = [{ id: DEFAULT_ACCOUNT_ID, username: "", graphId: null, threadsUsername: null, addedAt: nowIso() }];
+  }
+  const activeId = data.accounts.some((account) => account.id === source.activeAccountId)
+    ? (source.activeAccountId as string)
+    : (data.accounts[0]?.id ?? null);
+  data.activeAccountId = activeId;
+  const owner = activeId ?? DEFAULT_ACCOUNT_ID;
+
+  data.seen = { comments: stringList(source.seen?.comments), messages: stringList(source.seen?.messages) };
+  const legacyCursor = source.seen?.brokerCursor;
+  if (typeof legacyCursor === "number" && Number.isFinite(legacyCursor) && legacyCursor > 0) {
+    data.cursors[owner] = legacyCursor;
+  }
+  data.cursors = { ...data.cursors, ...recordOfNumbers(source.cursors) };
+
+  data.cooldowns = prefixedRecord(source.cooldowns, owner);
+  data.contacts = prefixedRecord(source.contacts, owner);
+  data.lastInsightsDate = recordFromLegacyField(source.lastInsightsDate, owner);
+  data.lastStorySnapshotAt = recordFromLegacyField(source.lastStorySnapshotAt, owner);
+
+  for (const key of COLLECTION_KEYS) {
+    const items = collectionOf(source[key], owner);
+    (data as unknown as Record<string, unknown>)[key] = ACCOUNT_SCOPED_KEYS.has(key) ? items : Array.isArray(source[key]) ? (source[key] as unknown[]).filter((item) => item && typeof item === "object") : [];
+  }
+  data.automationSince = typeof source.automationSince === "string" ? source.automationSince : null;
   return data;
+}
+
+function normalizeV2(source: Partial<AppData>): AppData {
+  const data = migrateV1toV2(source);
+  // already-v2 input only needs its loose edges trimmed; migrateV1toV2 is tolerant of it
+  return data;
+}
+
+export function normalize(input: unknown): AppData {
+  const source = (input ?? {}) as Partial<AppData>;
+  if (source.version === 2) return normalizeV2(source);
+  return migrateV1toV2(source);
 }

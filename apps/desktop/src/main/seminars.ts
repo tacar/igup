@@ -5,7 +5,7 @@ import { messageOf } from "./engine.js";
 import { newId, nowIso } from "./ids.js";
 import type { LineClient } from "./line-client.js";
 import type { ConnectionStorage } from "./storage.js";
-import type { BrokerEvent, Seminar, SeminarApplication } from "./types.js";
+import { DEFAULT_ACCOUNT_ID, type BrokerEvent, type Seminar, type SeminarApplication } from "./types.js";
 
 type SeminarDeps = {
   data: DataStore;
@@ -56,11 +56,12 @@ export class SeminarService {
     const seminar: Seminar = {
       ...input,
       id: input.id || newId("sem"),
+      accountId: existing?.accountId ?? input.accountId ?? data.accounts[0]?.id ?? DEFAULT_ACCOUNT_ID,
       applications: existing?.applications ?? [],
       createdAt: existing?.createdAt ?? nowIso(),
       updatedAt: nowIso(),
     };
-    const connection = await this.deps.secrets.load("instagram");
+    const connection = await this.deps.secrets.load("instagram", seminar.accountId);
     if (connection) {
       try {
         const capabilities = await this.deps.broker.capabilities();
@@ -81,7 +82,8 @@ export class SeminarService {
   }
 
   async remove(id: string): Promise<void> {
-    const connection = await this.deps.secrets.load("instagram");
+    const seminar = this.deps.data.get().seminars.find((item) => item.id === id);
+    const connection = seminar ? await this.deps.secrets.load("instagram", seminar.accountId).catch(() => null) : null;
     if (connection) {
       try {
         await this.deps.broker.deleteSeminar(connection, id);
@@ -102,10 +104,10 @@ export class SeminarService {
   }
 
   async sync(): Promise<void> {
-    const connection = await this.deps.secrets.load("instagram");
-    if (!connection) return;
     for (const seminar of this.deps.data.get().seminars) {
       if (!seminar.publicUrl) continue;
+      const connection = await this.deps.secrets.load("instagram", seminar.accountId).catch(() => null);
+      if (!connection) continue;
       try {
         const result = await this.deps.broker.seminarApplications(connection, seminar.id);
         for (const application of result.applications) await this.addApplication(seminar.id, application);

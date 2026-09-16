@@ -3,7 +3,7 @@ import { messageOf } from "./engine.js";
 import { localDateKey, nowIso } from "./ids.js";
 import type { InsightValue, InstagramClient } from "./instagram-client.js";
 import type { ConnectionStorage } from "./storage.js";
-import type { AccountSnapshot, Connection, MediaSnapshot, StorySnapshot } from "./types.js";
+import { DEFAULT_ACCOUNT_ID, type AccountSnapshot, type Connection, type MediaSnapshot, type StorySnapshot } from "./types.js";
 
 type InsightsDeps = {
   data: DataStore;
@@ -51,33 +51,61 @@ export class InsightsCollector {
     if (!data.settings.insightsEnabled || this.busy) return;
     const now = new Date();
     const today = localDateKey(now);
-    if (data.lastInsightsDate !== today && now.getHours() >= DAILY_HOUR) await this.captureDaily();
-    const storyDue = !data.lastStorySnapshotAt || now.getTime() - Date.parse(data.lastStorySnapshotAt) >= data.settings.storySnapshotIntervalMin * 60_000;
+    const owners = data.accounts.length > 0 ? data.accounts.map((account) => account.id) : [DEFAULT_ACCOUNT_ID];
+    const dailyDue = owners.some((id) => {
+      const last = data.lastInsightsDate[id];
+      return (!last || last !== today) && now.getHours() >= DAILY_HOUR;
+    });
+    if (dailyDue) await this.captureDaily();
+    const storyDue = owners.some((id) => {
+      const last = data.lastStorySnapshotAt[id];
+      return !last || now.getTime() - Date.parse(last) >= data.settings.storySnapshotIntervalMin * 60_000;
+    });
     if (storyDue) await this.captureStories();
   }
 
+  /** Accounts with an Instagram connection, in stored order. */
+  private async connectedAccounts(): Promise<{ accountId: string; connection: Connection }[]> {
+    const data = this.deps.data.get();
+    const result: { accountId: string; connection: Connection }[] = [];
+    for (const account of data.accounts) {
+      const connection = await this.deps.secrets.load("instagram", account.id);
+      if (connection) result.push({ accountId: account.id, connection });
+    }
+    if (data.accounts.length === 0) {
+      const connection = await this.deps.secrets.load("instagram", DEFAULT_ACCOUNT_ID);
+      if (connection) result.push({ accountId: DEFAULT_ACCOUNT_ID, connection });
+    }
+    return result;
+  }
+
   async captureDaily(): Promise<void> {
-    const connection = await this.deps.secrets.load("instagram");
-    if (!connection) return;
+    const targets = await this.connectedAccounts();
+    if (targets.length === 0) return;
     this.busy = true;
     try {
-      await this.captureAccount(connection);
-      await this.captureMedia(connection);
-      this.deps.data.update((data) => {
-        data.lastInsightsDate = localDateKey();
-      }, "insights:changed");
-      this.deps.data.log("info", "insights", "インサイトを取得しました", localDateKey());
-    } catch (cause) {
-      this.deps.data.log("warn", "insights", "インサイトの取得に失敗しました", messageOf(cause));
+      for (const target of targets) {
+        try {
+          await this.captureAccount(target.accountId, target.connection);
+          await this.captureMedia(target.accountId, target.connection);
+          this.deps.data.update((data) => {
+            data.lastInsightsDate[target.accountId] = localDateKey();
+          }, "insights:changed");
+          this.deps.data.log("info", "insights", "インサイトを取得しました", localDateKey());
+        } catch (cause) {
+          this.deps.data.log("warn", "insights", "インサイトの取得に失敗しました", messageOf(cause));
+        }
+      }
     } finally {
       this.busy = false;
       this.deps.notify?.("insights:changed");
     }
   }
 
-  private async captureAccount(connection: Connection): Promise<void> {
+  private async captureAccount(accountId: string, connection: Connection): Promise<void> {
     const account = await this.deps.instagram.getAccount(connection);
     const snapshot: AccountSnapshot = {
+      accountId,
       date: localDateKey(),
       capturedAt: nowIso(),
       followers: account.followers_count ?? null,
@@ -103,14 +131,14 @@ export class InsightsCollector {
       // these metrics need the insights permission; keep the follower count anyway
     }
     this.deps.data.update((data) => {
-      data.accountSnapshots = data.accountSnapshots.filter((item) => item.date !== snapshot.date);
+      data.accountSnapshots = data.accountSnapshots.filter((item) => !(item.accountId === snapshot.accountId && item.date === snapshot.date));
       data.accountSnapshots.push(snapshot);
       data.accountSnapshots.sort((a, b) => a.date.localeCompare(b.date));
       if (data.accountSnapshots.length > 400) data.accountSnapshots.splice(0, data.accountSnapshots.length - 400);
     });
   }
 
-  private async captureMedia(connection: Connection): Promise<void> {
+  private async captureMedia(accountId: string, connection: Connection): Promise<void> {
     const media = await this.deps.instagram.listMedia(connection, 50);
     const date = localDateKey();
     const snapshots: MediaSnapshot[] = [];
@@ -124,6 +152,7 @@ export class InsightsCollector {
         if (snapshots.length === 0) this.deps.data.log("warn", "insights", "投稿インサイトを取得できませんでした（いいね数・コメント数のみ記録）", messageOf(cause));
       }
       snapshots.push({
+        accountId,
         mediaId: item.id,
         date,
         capturedAt: nowIso(),
@@ -144,71 +173,84 @@ export class InsightsCollector {
   }
 
   async captureStories(): Promise<void> {
-    const connection = await this.deps.secrets.load("instagram");
-    if (!connection) return;
+    const targets = await this.connectedAccounts();
+    if (targets.length === 0) return;
     this.busy = true;
     try {
-      const stories = await this.deps.instagram.listStories(connection);
-      const snapshots: StorySnapshot[] = [];
-      for (const story of stories.data) {
-        let metrics: Record<string, number> = {};
+      let saved = 0;
+      for (const target of targets) {
         try {
-          metrics = collectMetrics((await this.deps.instagram.mediaInsights(connection, story.id, STORY_METRICS)).data);
-        } catch {
-          try {
-            metrics = collectMetrics((await this.deps.instagram.mediaInsights(connection, story.id, STORY_METRICS_FALLBACK)).data);
-          } catch {
-            metrics = {};
-          }
+          saved += await this.captureAccountStories(target.accountId, target.connection);
+        } catch (cause) {
+          this.deps.data.log("warn", "insights", "ストーリーズのスナップショットに失敗しました", messageOf(cause));
+          this.deps.data.update((data) => {
+            data.lastStorySnapshotAt[target.accountId] = nowIso();
+          });
         }
-        snapshots.push({
-          storyId: story.id,
-          capturedAt: nowIso(),
-          timestamp: story.timestamp ?? null,
-          mediaType: story.media_type ?? "",
-          mediaUrl: story.media_url ?? null,
-          metrics,
-        });
       }
-      this.deps.data.update((data) => {
-        for (const snapshot of snapshots) {
-          const index = data.storySnapshots.findIndex((item) => item.storyId === snapshot.storyId);
-          if (index >= 0) data.storySnapshots[index] = snapshot;
-          else data.storySnapshots.unshift(snapshot);
-        }
-        if (data.storySnapshots.length > 500) data.storySnapshots.length = 500;
-        data.lastStorySnapshotAt = nowIso();
-      }, "insights:changed");
-      if (snapshots.length > 0) this.deps.data.log("info", "insights", `ストーリーズ${snapshots.length}件のスナップショットを保存しました`);
-    } catch (cause) {
-      this.deps.data.log("warn", "insights", "ストーリーズのスナップショットに失敗しました", messageOf(cause));
-      this.deps.data.update((data) => {
-        data.lastStorySnapshotAt = nowIso();
-      });
+      if (saved > 0) this.deps.data.log("info", "insights", `ストーリーズ${saved}件のスナップショットを保存しました`);
     } finally {
       this.busy = false;
       this.deps.notify?.("insights:changed");
     }
   }
 
-  summary(): InsightsSummary {
+  private async captureAccountStories(accountId: string, connection: Connection): Promise<number> {
+    const stories = await this.deps.instagram.listStories(connection);
+    const snapshots: StorySnapshot[] = [];
+    for (const story of stories.data) {
+      let metrics: Record<string, number> = {};
+      try {
+        metrics = collectMetrics((await this.deps.instagram.mediaInsights(connection, story.id, STORY_METRICS)).data);
+      } catch {
+        try {
+          metrics = collectMetrics((await this.deps.instagram.mediaInsights(connection, story.id, STORY_METRICS_FALLBACK)).data);
+        } catch {
+          metrics = {};
+        }
+      }
+      snapshots.push({
+        accountId,
+        storyId: story.id,
+        capturedAt: nowIso(),
+        timestamp: story.timestamp ?? null,
+        mediaType: story.media_type ?? "",
+        mediaUrl: story.media_url ?? null,
+        metrics,
+      });
+    }
+    this.deps.data.update((data) => {
+      for (const snapshot of snapshots) {
+        const index = data.storySnapshots.findIndex((item) => item.accountId === accountId && item.storyId === snapshot.storyId);
+        if (index >= 0) data.storySnapshots[index] = snapshot;
+        else data.storySnapshots.unshift(snapshot);
+      }
+      if (data.storySnapshots.length > 500) data.storySnapshots.length = 500;
+      data.lastStorySnapshotAt[accountId] = nowIso();
+    }, "insights:changed");
+    return snapshots.length;
+  }
+
+  summary(accountId?: string): InsightsSummary {
     const data = this.deps.data.get();
+    const owner = accountId ?? data.activeAccountId ?? DEFAULT_ACCOUNT_ID;
     const latestByMedia = new Map<string, MediaSnapshot>();
     for (const snapshot of data.mediaSnapshots) {
+      if (snapshot.accountId !== owner) continue;
       const current = latestByMedia.get(snapshot.mediaId);
       if (!current || current.date < snapshot.date) latestByMedia.set(snapshot.mediaId, snapshot);
     }
     const topMedia = [...latestByMedia.values()]
       .sort((a, b) => score(b) - score(a))
       .slice(0, 10);
-    const followerSeries = data.accountSnapshots.slice(-60).map((item) => ({ date: item.date, followers: item.followers, reach: item.reach }));
+    const followerSeries = data.accountSnapshots.filter((item) => item.accountId === owner).slice(-60).map((item) => ({ date: item.date, followers: item.followers, reach: item.reach }));
     return {
-      latest: data.accountSnapshots.at(-1) ?? null,
+      latest: data.accountSnapshots.filter((item) => item.accountId === owner).at(-1) ?? null,
       followerSeries,
       topMedia,
-      stories: data.storySnapshots.slice(0, 50),
-      lastInsightsDate: data.lastInsightsDate,
-      lastStorySnapshotAt: data.lastStorySnapshotAt,
+      stories: data.storySnapshots.filter((item) => item.accountId === owner).slice(0, 50),
+      lastInsightsDate: data.lastInsightsDate[owner] ?? null,
+      lastStorySnapshotAt: data.lastStorySnapshotAt[owner] ?? null,
     };
   }
 }

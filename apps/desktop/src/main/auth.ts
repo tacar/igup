@@ -9,19 +9,20 @@ const CALLBACK_PORT = 42_813;
 type StartResponse = { state: string; verifier: string; authorizationUrl: string };
 
 export class DesktopAuth {
-  private readonly pending = new Map<string, { verifier: string; provider: Provider; startedAt: number }>();
+  private readonly pending = new Map<string, { verifier: string; provider: Provider; accountId: string | null; startedAt: number }>();
   private server: Server | null = null;
 
   constructor(
     private brokerUrl: string,
-    private readonly onConnected: (connection: Connection, provider: Provider) => Promise<void>,
+    private readonly onConnected: (connection: Connection, provider: Provider, accountId: string | null) => Promise<void>,
   ) {}
 
   setUrl(url: string): void {
     this.brokerUrl = url;
   }
 
-  async start(provider: Provider = "instagram"): Promise<void> {
+  /** accountId targets an existing local account for reconnection; null means "decide on completion". */
+  async start(provider: Provider = "instagram", accountId: string | null = null): Promise<void> {
     await this.ensureCallbackServer();
     const url = new URL("/oauth/start", this.brokerUrl);
     if (provider !== "instagram") url.searchParams.set("provider", provider);
@@ -37,7 +38,7 @@ export class DesktopAuth {
     }
     const attempt = (await response.json()) as StartResponse;
     for (const [state, item] of this.pending) if (Date.now() - item.startedAt > 15 * 60_000) this.pending.delete(state);
-    this.pending.set(attempt.state, { verifier: attempt.verifier, provider, startedAt: Date.now() });
+    this.pending.set(attempt.state, { verifier: attempt.verifier, provider, accountId, startedAt: Date.now() });
     await shell.openExternal(attempt.authorizationUrl);
   }
 
@@ -86,7 +87,7 @@ export class DesktopAuth {
     const result = (await response.json()) as Connection | { error: string };
     if (!response.ok || "error" in result) throw new Error("error" in result ? result.error : "認証結果を取得できませんでした。");
     this.pending.delete(state);
-    await this.onConnected(result, pending.provider);
+    await this.onConnected(result, pending.provider, pending.accountId);
     return pending.provider;
   }
 }

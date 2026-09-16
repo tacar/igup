@@ -1,6 +1,6 @@
 /* LINE seminar sign-up: public sign-up page on the broker, thanks + reminders over LINE from this PC. */
 (() => {
-  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, switchControl, copyText, openExternal, toLocalInput, fromLocalInput } = IGUP;
+  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, switchControl, copyText, openExternal, toLocalInput, fromLocalInput, accountName, accounts } = IGUP;
 
   function openEditor(existing) {
     const seminar = existing ? structuredClone(existing) : { id: "", title: "", description: "", dates: [], liffId: null, thanksMessage: "{name}さん、「{title}」へのお申し込みありがとうございます。\n開催日時: {date}\n当日お会いできるのを楽しみにしています！", reminders: [{ id: `rm_${Date.now()}`, hoursBefore: 24, text: "{name}さん、明日「{title}」の開催です。\n{date} にお待ちしています！" }], applications: [], enabled: true, publicUrl: null, createdAt: "", updatedAt: "" };
@@ -111,7 +111,7 @@
         seminars.length === 0 ? h("div", { class: "empty" }, "セミナーはまだありません。") :
           h("div", { class: "list" }, seminars.map((seminar) => h("div", { class: `item${seminar.enabled ? "" : " disabled"}` },
             h("div", { class: "body" },
-              h("div", { class: "row" }, h("span", { class: "title" }, seminar.title), seminar.enabled ? badge("受付中", "ok") : badge("停止中"), badge(`申込 ${seminar.applications.length}`, "info")),
+              h("div", { class: "row" }, h("span", { class: "title" }, seminar.title), accounts().length > 1 && seminar.accountId ? badge(accountName(seminar.accountId), "accent") : null, seminar.enabled ? badge("受付中", "ok") : badge("停止中"), badge(`申込 ${seminar.applications.length}`, "info")),
               h("div", { class: "meta" }, seminar.dates.map((date) => `${fmt.dateTime(date.startsAt)}${date.capacity ? `（定員${date.capacity}）` : ""}`).join(" / ")),
               seminar.publicUrl ? h("div", { class: "row" }, h("code", {}, seminar.publicUrl), h("button", { class: "ghost small", type: "button", onClick: () => copyText(seminar.publicUrl) }, "コピー"), h("button", { class: "ghost small", type: "button", onClick: () => openExternal(seminar.publicUrl) }, "開く"), h("button", { class: "ghost small", type: "button", onClick: (event) => guard(event.currentTarget, () => openQr(seminar)) }, "QR")) : h("div", { class: "meta" }, "申込ページは未公開です（保存時にブローカーへ公開されます）。"),
             ),

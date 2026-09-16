@@ -1,7 +1,8 @@
 /* Keyword auto-reply rules: comment / DM / story reply / live comment → public reply + DM with buttons, chains and follow-ups. */
 (() => {
-  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, switchControl, SOURCE_LABELS } = IGUP;
+  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, switchControl, SOURCE_LABELS, accountChips, accountSelect, accountName, accounts } = IGUP;
   const DELAY_PRESETS = [[10, "10分後"], [60, "1時間後"], [180, "3時間後"], [720, "12時間後"], [1380, "23時間後"]];
+  let accountFilter = null;
 
   function chainTarget(payload) {
     const parts = (payload ?? "").split(":");
@@ -84,8 +85,9 @@
 
   async function openEditor(existing) {
     const rules = await api("rules:list");
-    const rule = existing ? structuredClone(existing) : { name: "", enabled: true, sources: ["comment"], keywords: [], matchMode: "contains", mediaIds: [], publicReplies: [], message: null, followUps: [], cooldownHours: 24 };
+    const rule = existing ? structuredClone(existing) : { name: "", enabled: true, sources: ["comment"], keywords: [], matchMode: "contains", mediaIds: [], publicReplies: [], message: null, followUps: [], cooldownHours: 24, accountId: IGUP.activeAccountId() ?? undefined };
     const name = h("input", { type: "text", placeholder: "例: 「資料」でPDFを送る", value: rule.name });
+    const accountSel = accounts().length > 1 && !rule.id ? accountSelect(rule.accountId, (value) => { rule.accountId = value; }) : null;
     const sourceInputs = Object.entries(SOURCE_LABELS).map(([key, label]) => { const input = h("input", { type: "checkbox", value: key, checked: rule.sources.includes(key) }); return h("label", { class: "inline" }, input, ` ${label}`); });
     const keywords = h("textarea", { rows: 3, placeholder: "1行に1つ（例: 資料 / しりょう / 欲しい）", value: rule.keywords.join("\n") });
     const matchMode = h("select", { value: rule.matchMode }, h("option", { value: "contains" }, "含んでいれば反応"), h("option", { value: "exact" }, "完全一致のみ"));
@@ -100,7 +102,7 @@
         h("div", { class: "row" },
           selected.length === 0 ? badge("すべての投稿", "info") : selected.map((id) => badge(`${mediaList?.find((item) => item.id === id) ? snippet(mediaList.find((item) => item.id === id)) : id}`, "accent")),
           h("button", { class: "secondary small", type: "button", onClick: (event) => guard(event.currentTarget, async () => {
-            if (!mediaList) mediaList = (await api("instagram:media", { limit: 30 })).data ?? [];
+            if (!mediaList) mediaList = (await api("instagram:media", { accountId: rule.accountId, limit: 30 })).data ?? [];
             renderMedia();
             replace(mediaGrid, mediaList.map((item) => {
               const on = rule.mediaIds.includes(item.id);
@@ -146,6 +148,7 @@
       const base = {
         ...(rule.id ? { id: rule.id } : {}),
         name: name.value,
+        accountId: accountSel ? accountSel.value : rule.accountId,
         enabled: rule.enabled,
         sources: sourceInputs.map((label) => label.querySelector("input")).filter((input) => input.checked).map((input) => input.value),
         keywords: keywords.value.split(/[\n,、]/).map((keyword) => keyword.trim()).filter(Boolean),
@@ -173,7 +176,11 @@
       title: rule.id ? "自動返信ルールを編集" : "自動返信ルールを作成",
       wide: true,
       body: h("div", { class: "stack" },
-        h("div", { class: "grid cols-2" }, field("ルール名", name), field("同じ人への再送を控える時間（クールダウン）", cooldown, "時間。0で毎回返信します。")),
+        h("div", { class: "grid cols-2" },
+          field("ルール名", name),
+          accountSel ? field("アカウント", accountSel, "このInstagramアカウントに届いた反応に返信します。") : null,
+          field("同じ人への再送を控える時間（クールダウン）", cooldown, "時間。0で毎回返信します。"),
+        ),
         h("div", {}, h("label", {}, "どこに来たら反応するか"), h("div", { class: "row" }, sourceInputs), h("span", { class: "hint" }, "コメントの返信（返事）には反応しません。ライブ配信コメントは設定で有効にしたときだけ確認します。")),
         h("div", { class: "grid cols-2" }, field("キーワード", keywords, "大文字小文字・全角半角・カナは区別しません。"), field("一致のしかた", matchMode)),
         h("div", {}, h("label", {}, "対象の投稿（コメント・ライブ用）"), mediaBox, mediaGrid),
@@ -204,14 +211,17 @@
     icon: "↩",
     async render(container, params) {
       const [rules, status] = await Promise.all([api("rules:list"), api("connection:status")]);
+      const visible = rules.filter((rule) => !accountFilter || rule.accountId === accountFilter);
+      const multi = accounts().length > 1;
       replace(container,
         pageHead("キーワード自動返信", "コメント・DM・ストーリーズ返信・ライブのキーワードに、公開返信とリンク付きDMを自動で返します。", h("button", { type: "button", onClick: () => openEditor(null) }, "＋ ルールを作成")),
+        accountChips(accountFilter, (value) => { accountFilter = value; IGUP.rerender(); }),
         !status.automation.enabled ? h("p", { class: "small", style: { color: "var(--warn)" } }, "自動返信は停止中です。ダッシュボードのスイッチで開始してください。") : null,
-        rules.length === 0 ? h("div", { class: "empty" }, "ルールはまだありません。「ルールを作成」から始めましょう。") :
-          h("div", { class: "list" }, rules.map((rule) => h("div", { class: `item${rule.enabled ? "" : " disabled"}` },
+        visible.length === 0 ? h("div", { class: "empty" }, rules.length === 0 ? "ルールはまだありません。「ルールを作成」から始めましょう。" : "該当するルールはありません。") :
+          h("div", { class: "list" }, visible.map((rule) => h("div", { class: `item${rule.enabled ? "" : " disabled"}` },
             switchControl(rule.enabled, (enabled) => guard(null, async () => { await api("rules:save", { id: rule.id, enabled }); })),
             h("div", { class: "body" },
-              h("div", { class: "row" }, h("span", { class: "title" }, rule.name), rule.sources.map((source) => badge(SOURCE_LABELS[source], "info")), rule.mediaIds.length ? badge(`対象投稿 ${rule.mediaIds.length}件`) : null),
+              h("div", { class: "row" }, h("span", { class: "title" }, rule.name), multi && rule.accountId ? badge(accountName(rule.accountId), "accent") : null, rule.sources.map((source) => badge(SOURCE_LABELS[source], "info")), rule.mediaIds.length ? badge(`対象投稿 ${rule.mediaIds.length}件`) : null),
               h("div", { class: "meta" }, `キーワード: ${rule.keywords.join(" / ")}`, ` · ${rule.matchMode === "exact" ? "完全一致" : "部分一致"}`, ` · クールダウン ${rule.cooldownHours}時間`, rule.followUps.length ? ` · 時間差送信 ${rule.followUps.length}件` : "", rule.message?.buttons.length ? ` · ボタン ${rule.message.buttons.length}` : ""),
               h("div", { class: "meta" }, `マッチ ${fmt.n(rule.stats.matched)} · DM ${fmt.n(rule.stats.dmSent)} · 既読 ${fmt.n(rule.stats.read)} · タップ ${fmt.n(rule.stats.buttonTapped)}`, rule.stats.dmFailed ? ` · 失敗 ${fmt.n(rule.stats.dmFailed)}` : ""),
             ),

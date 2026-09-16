@@ -1,6 +1,6 @@
 /* Scheduled posts: list + editor (feed image / carousel / reel / story / Threads). */
 (() => {
-  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, fail, toLocalInput, fromLocalInput, POST_KIND, POST_STATUS, openExternal } = IGUP;
+  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, fail, toLocalInput, fromLocalInput, POST_KIND, POST_STATUS, openExternal, accountChips, accountSelect, accountName, accounts } = IGUP;
   const previewCache = new Map();
   const FILTERS = [
     { key: "active", label: "予約中・投稿中", test: (post) => post.status === "scheduled" || post.status === "publishing" },
@@ -9,6 +9,7 @@
     { key: "all", label: "すべて", test: () => true },
   ];
   let filter = "active";
+  let accountFilter = null;
 
   async function preview(asset) {
     if (asset.kind === "video") return null;
@@ -99,9 +100,10 @@
 
   async function openEditor(existing, { publishNow = false, defaults = {} } = {}) {
     const [rules, settings] = await Promise.all([api("rules:list"), api("settings:get")]);
-    const post = existing ? structuredClone(existing) : { kind: "image", scheduledAt: null, caption: "", media: [], cover: null, shareToFeed: true, threads: [{ text: "", media: [] }], attachRuleId: null, ...defaults };
+    const post = existing ? structuredClone(existing) : { kind: "image", scheduledAt: null, caption: "", media: [], cover: null, shareToFeed: true, threads: [{ text: "", media: [] }], attachRuleId: null, accountId: IGUP.activeAccountId() ?? undefined, ...defaults };
     if (post.threads.length === 0) post.threads.push({ text: "", media: [] });
     const kindSelect = h("select", { value: post.kind }, Object.entries(POST_KIND).map(([key, meta]) => h("option", { value: key }, meta.label)));
+    const accountSel = accounts().length > 1 && !post.id ? accountSelect(post.accountId, (value) => { post.accountId = value; }) : null;
     const when = h("input", { type: "datetime-local", value: toLocalInput(post.scheduledAt) });
     const caption = h("textarea", { rows: 6, placeholder: "キャプション（ハッシュタグもここに）", value: post.caption });
     const captionCount = h("span", { class: "hint" });
@@ -159,6 +161,7 @@
         ...(post.id ? { id: post.id } : {}),
         kind: kindSelect.value,
         scheduledAt,
+        accountId: accountSel ? accountSel.value : post.accountId,
         caption: caption.value,
         media: post.media,
         cover: kindSelect.value === "reel" ? post.cover : null,
@@ -172,7 +175,11 @@
       title: post.id ? "予約投稿を編集" : "投稿を予約",
       wide: true,
       body: h("div", { class: "stack" },
-        h("div", { class: "grid cols-2" }, field("投稿の種類", kindSelect), field("投稿日時", when, "この時刻にアプリが起動していれば自動投稿します。")),
+        h("div", { class: "grid cols-2" },
+          field("投稿の種類", kindSelect),
+          accountSel ? field("アカウント", accountSel, "このInstagramアカウントに投稿します。") : null,
+          field("投稿日時", when, "この時刻にアプリが起動していれば自動投稿します。"),
+        ),
         help,
         mediaBox,
       ),
@@ -207,11 +214,13 @@
     async render(container, params) {
       const posts = await api("posts:list");
       const active = FILTERS.find((item) => item.key === filter) ?? FILTERS[0];
-      const visible = posts.filter(active.test).sort((a, b) => (active.key === "published" ? b.scheduledAt.localeCompare(a.scheduledAt) : a.scheduledAt.localeCompare(b.scheduledAt)));
-      const counts = Object.fromEntries(FILTERS.map((item) => [item.key, posts.filter(item.test).length]));
+      const visible = posts.filter(active.test).filter((post) => !accountFilter || post.accountId === accountFilter).sort((a, b) => (active.key === "published" ? b.scheduledAt.localeCompare(a.scheduledAt) : a.scheduledAt.localeCompare(b.scheduledAt)));
+      const counts = Object.fromEntries(FILTERS.map((item) => [item.key, posts.filter(item.test).filter((post) => !accountFilter || post.accountId === accountFilter).length]));
+      const multi = accounts().length > 1;
 
       replace(container,
         pageHead("予約投稿", "フィード・カルーセル・リール・ストーリーズ・Threadsを予約して自動投稿します。", h("button", { type: "button", onClick: () => openEditor(null) }, "＋ 投稿を予約")),
+        accountChips(accountFilter, (value) => { accountFilter = value; IGUP.rerender(); }),
         h("div", { class: "subtabs" }, FILTERS.map((item) => h("button", { type: "button", class: item.key === filter ? "active" : "", onClick: () => { filter = item.key; IGUP.rerender(); } }, `${item.label}（${counts[item.key]}）`))),
         visible.length === 0 ? h("div", { class: "empty" }, "該当する投稿はありません。") :
           h("div", { class: "list" }, visible.map((post) => {
@@ -223,7 +232,7 @@
               img,
               h("div", { class: "body" },
                 h("div", { class: "row" }, h("span", { class: "chip", style: { background: POST_KIND[post.kind].color } }, POST_KIND[post.kind].label), h("span", { class: "title" }, snippet(post))),
-                h("div", { class: "meta" }, `${fmt.dateTime(post.scheduledAt)}（${fmt.relative(post.scheduledAt)}）`, post.kind === "threads" ? ` · ${post.threads.length}項目` : ` · メディア${post.media.length}件`, post.attempts ? ` · 試行${post.attempts}回` : ""),
+                h("div", { class: "meta" }, `${fmt.dateTime(post.scheduledAt)}（${fmt.relative(post.scheduledAt)}）`, post.kind === "threads" ? ` · ${post.threads.length}項目` : ` · メディア${post.media.length}件`, post.attempts ? ` · 試行${post.attempts}回` : "", multi ? ` · ${accountName(post.accountId)}` : ""),
                 post.error ? h("div", { class: "small", style: { color: "var(--danger)" } }, post.error) : null,
                 post.status === "publishing" ? h("div", { class: "progress", dataset: { progress: post.id } }, "投稿中…") : null,
               ),
