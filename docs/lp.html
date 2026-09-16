@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IGUP | Instagram・Threads・LINE運用を、PCひとつで完結</title>
+<meta name="description" content="キーワード自動返信・予約投稿・分析・LINEセミナー集客を、このPCのなかだけで完結させる買い切りデスクトップアプリ。複数アカウント・繰り返し予約・CSV一括インポート・AI文章生成に対応。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700;900&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --ink: #1c1b17;
+    --ink-soft: #4a483f;
+    --muted: #6b6a5f;
+    --paper: #e7e8e1;
+    --surface: #f7f7f2;
+    --surface-2: #eeefe8;
+    --line: #c9c8bc;
+    --signal: #b23d1c;
+    --signal-ink: #ffffff;
+    --ok: #3f6b4f;
+    --ok-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ede9df;
+      --ink-soft: #cfcabd;
+      --muted: #a6a398;
+      --paper: #17171a;
+      --surface: #201e1b;
+      --surface-2: #262320;
+      --line: #3a3733;
+      --signal: #e2653a;
+      --signal-ink: #1a1210;
+      --ok: #74ad82;
+      --ok-ink: #12211a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ede9df;
+    --ink-soft: #cfcabd;
+    --muted: #a6a398;
+    --paper: #17171a;
+    --surface: #201e1b;
+    --surface-2: #262320;
+    --line: #3a3733;
+    --signal: #e2653a;
+    --signal-ink: #1a1210;
+    --ok: #74ad82;
+    --ok-ink: #12211a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 16px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: "Zen Kaku Gothic New", "BIZ UDPGothic", sans-serif;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0;
+  }
+  a { color: var(--signal); }
+  a:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 3px;
+  }
+  .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page {
+    max-width: 980px;
+    margin-inline: auto;
+    padding-inline: 20px;
+    padding-block: 56px 96px;
+  }
+  .prose { max-width: 42em; display: grid; gap: 14px; }
+  .prose p { margin: 0; color: var(--ink-soft); }
+  .prose p.lead { color: var(--ink); font-size: 1.08rem; }
+  section { margin-top: 72px; }
+  section > h2 {
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: .02em;
+    margin-bottom: 18px;
+  }
+  h3.sub {
+    font-size: .98rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin-top: 44px;
+  }
+  .section-lead { margin: 0; max-width: 42em; color: var(--ink-soft); }
+
+  /* ---- hero ---- */
+  .masthead .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .masthead h1 {
+    font-size: clamp(2rem, 5.2vw, 3.1rem);
+    font-weight: 900;
+    letter-spacing: .01em;
+    margin-top: 12px;
+    text-wrap: initial; /* the <br> sets the split; balance would re-wrap mid-word */
+  }
+  .masthead .tagline {
+    margin: 16px 0 0;
+    color: var(--ink-soft);
+    font-size: 1.06rem;
+    max-width: 36em;
+  }
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 26px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 700;
+    font-size: .96rem;
+    text-decoration: none;
+    border: 1.5px solid transparent;
+    line-height: 1.4;
+  }
+  .btn.primary { background: var(--signal); color: var(--signal-ink); border-color: var(--signal); }
+  .btn.primary:hover { opacity: .88; }
+  .btn.ghost { border-color: var(--ink); color: var(--ink); }
+  .btn.ghost:hover { border-color: var(--signal); color: var(--signal); }
+  .hero-cta .sub-note { font-size: .82rem; color: var(--muted); }
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 22px;
+  }
+  .hero-badges span {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: .8rem;
+    color: var(--ink-soft);
+  }
+  .hero-badges span.strong { border-color: var(--signal); color: var(--signal); font-weight: 700; }
+
+  /* ---- CSS mock panel ---- */
+  .mock {
+    margin-top: 40px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+    box-shadow: 0 22px 44px -30px rgba(28, 27, 23, .55);
+  }
+  .mock-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  .mock-bar .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); }
+  .mock-bar .dot:first-child { background: var(--signal); border-color: var(--signal); }
+  .mock-bar .mock-title {
+    margin-left: 8px;
+    font-size: .72rem;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+  .mock-body { display: grid; grid-template-columns: 172px 1fr; }
+  .mock-nav {
+    border-right: 1px solid var(--line);
+    padding: 14px 10px;
+    display: grid;
+    gap: 2px;
+    align-content: start;
+  }
+  .mock-brand {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: .82rem;
+    letter-spacing: .16em;
+    padding: 2px 8px 10px;
+  }
+  .mock-link { font-size: .82rem; padding: 6px 9px; border-radius: 6px; color: var(--ink-soft); }
+  .mock-link.on { background: var(--signal); color: var(--signal-ink); font-weight: 700; }
+  .mock-main { padding: 16px 20px 18px; display: grid; gap: 12px; align-content: start; }
+  .mock-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mock-h { font-size: .96rem; font-weight: 700; margin-right: auto; }
+  .mock-btn { font-size: .72rem; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; color: var(--ink-soft); white-space: nowrap; }
+  .mock-btn.fill { background: var(--signal); color: var(--signal-ink); border-color: var(--signal); font-weight: 700; }
+  .mock-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mock-chip {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 11px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .mock-chip.on { border-color: var(--signal); color: var(--signal); font-weight: 700; }
+  .mock-list { border-top: 1px solid var(--line); }
+  .mock-row {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    padding: 11px 2px;
+    font-size: .84rem;
+  }
+  .mock-row time {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .76rem;
+    color: var(--muted);
+    min-width: 112px;
+    white-space: nowrap;
+  }
+  .mock-kind { border: 1px solid var(--line); border-radius: 4px; padding: 1px 8px; font-size: .7rem; color: var(--ink-soft); white-space: nowrap; }
+  .mock-kind.hot { background: var(--signal); color: var(--signal-ink); border-color: var(--signal); font-weight: 700; }
+  .mock-cap { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mock-rec {
+    margin-left: auto;
+    font-size: .72rem;
+    color: var(--ok);
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 1px 10px;
+    white-space: nowrap;
+  }
+  .mock-foot { display: flex; align-items: baseline; gap: 12px; font-size: .76rem; color: var(--ok); }
+  .mock-foot .dash { color: var(--muted); }
+
+  /* ---- point lists ---- */
+  .points {
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 14px;
+  }
+  .points li {
+    max-width: 42em;
+    padding-left: 26px;
+    position: relative;
+    color: var(--ink-soft);
+  }
+  .points li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .55em;
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--signal);
+    transform: rotate(45deg);
+  }
+  .points li strong { color: var(--ink); font-weight: 700; }
+
+  /* ---- features ---- */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 26px;
+    margin-top: 22px;
+    padding-top: 26px;
+    border-top: 1px solid var(--line);
+  }
+  .step-num {
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+  .step-num.new { border-color: var(--signal); color: var(--signal); }
+  .feature h3 { font-size: 1.05rem; font-weight: 700; margin-top: 13px; }
+  .feature p { margin: 9px 0 0; color: var(--ink-soft); font-size: .93rem; }
+
+  .callout {
+    margin-top: 36px;
+    border-left: 3px solid var(--signal);
+    padding: 4px 0 4px 16px;
+    max-width: 44em;
+  }
+  .callout .label {
+    margin: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--signal);
+    font-weight: 700;
+  }
+  .callout p { margin: 6px 0 0; color: var(--ink-soft); }
+
+  /* ---- compare table ---- */
+  .scroll { overflow-x: auto; }
+  .compare {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 680px;
+    margin-top: 20px;
+    font-size: .92rem;
+  }
+  .compare th, .compare td {
+    text-align: left;
+    vertical-align: top;
+    padding: 13px 22px 13px 0;
+    border-top: 1px solid var(--line);
+  }
+  .compare thead th {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+    border-top: 0;
+    padding-top: 0;
+  }
+  .compare tbody th { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .compare td { color: var(--ink-soft); }
+  .compare td.ours { color: var(--ink); }
+  .compare tbody tr:last-child th, .compare tbody tr:last-child td { border-bottom: 1px solid var(--line); }
+  .compare-note { margin: 12px 0 0; font-size: .82rem; color: var(--muted); max-width: 46em; }
+
+  /* ---- figure (sequence diagram) ---- */
+  .figure-panel {
+    margin: 28px 0 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 20px 20px 14px;
+  }
+  .seq {
+    display: block;
+    width: 100%;
+    min-width: 640px;
+    height: auto;
+    color: var(--ink);
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  }
+  .seq .zone line { stroke: currentColor; stroke-opacity: .35; stroke-width: 1; }
+  .seq .zone text {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-anchor: middle;
+    fill: var(--muted);
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 6px;
+    stroke-linejoin: round;
+  }
+  .seq .life { stroke: currentColor; stroke-opacity: .45; stroke-dasharray: 3 4; stroke-width: 1; }
+  .seq .actor rect { fill: var(--surface); stroke: currentColor; stroke-width: 1.2; }
+  .seq .actor text { font-size: 13px; font-weight: 700; text-anchor: middle; fill: currentColor; }
+  .seq .msg line { stroke: currentColor; stroke-width: 1.3; }
+  .seq .msg line.ret { stroke-dasharray: 5 4; }
+  .seq .msg text {
+    font-size: 12px;
+    text-anchor: middle;
+    fill: currentColor;
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+  }
+  .seq .msg text.hl { fill: var(--signal); font-weight: 700; font-size: 11px; }
+  .seq .tag rect { fill: var(--signal); }
+  .seq .tag text { font-size: 11px; font-weight: 700; text-anchor: middle; fill: var(--signal-ink); }
+  figcaption {
+    margin-top: 12px;
+    font-size: .84rem;
+    color: var(--muted);
+    max-width: 46em;
+  }
+
+  /* ---- flow list ---- */
+  .flow {
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: flow;
+    display: grid;
+    gap: 14px;
+    max-width: 44em;
+  }
+  .flow li {
+    counter-increment: flow;
+    position: relative;
+    padding-left: 44px;
+    color: var(--ink-soft);
+  }
+  .flow li::before {
+    content: counter(flow);
+    position: absolute;
+    left: 0;
+    top: .2em;
+    width: 28px;
+    height: 28px;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    display: grid;
+    place-items: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: .8rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .flow li strong { color: var(--ink); }
+
+  /* ---- env spec table ---- */
+  .spec-table { margin-top: 18px; max-width: 48em; }
+  .spec-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 200px) 1fr;
+    gap: 6px 24px;
+    padding-block: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .spec-row:last-child { border-bottom: 1px solid var(--line); }
+  .spec-row .k { color: var(--muted); font-size: .88rem; }
+  .spec-row .v { font-size: .92rem; color: var(--ink-soft); }
+  .spec-row .v .mono { font-size: .84rem; }
+
+  /* ---- FAQ ---- */
+  .faq { margin-top: 10px; max-width: 50em; }
+  .qa { padding-block: 18px; border-top: 1px solid var(--line); }
+  .qa:last-child { border-bottom: 1px solid var(--line); }
+  .qa .q { margin: 0; font-weight: 700; color: var(--ink); }
+  .qa .a { margin: 8px 0 0; color: var(--ink-soft); }
+
+  /* ---- CTA ---- */
+  .cta-panel {
+    margin-top: 28px;
+    border: 1.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 44px 28px 40px;
+    text-align: center;
+    background: var(--surface);
+    display: grid;
+    gap: 14px;
+    justify-items: center;
+  }
+  .cta-panel h2 { font-size: 1.45rem; font-weight: 900; }
+  .cta-panel .lead { margin: 0; color: var(--ink-soft); max-width: 34em; }
+  .btn.big { padding: 14px 36px; font-size: 1.02rem; }
+  .cta-note { margin: 0; color: var(--muted); font-size: .88rem; }
+  .cta-links { font-size: .84rem; color: var(--muted); }
+  .cta-links a { margin-inline: 6px; }
+
+  footer.note {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+    max-width: 46em;
+    display: grid;
+    gap: 8px;
+  }
+  footer.note nav a { margin-right: 16px; }
+
+  @media (max-width: 920px) {
+    .feature-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 700px) {
+    section { margin-top: 56px; }
+    .feature-grid { grid-template-columns: 1fr; gap: 22px; }
+    .mock-body { grid-template-columns: 1fr; }
+    .mock-nav {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      padding: 10px;
+    }
+    .mock-brand { width: 100%; padding-bottom: 4px; }
+    .mock-row { flex-wrap: wrap; row-gap: 4px; }
+    .mock-row time { min-width: 0; }
+    .mock-cap { white-space: normal; }
+    .mock-rec { margin-left: 0; }
+    .spec-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 420px) {
+    .page { padding-inline: 16px; }
+    .btn { width: 100%; justify-content: center; }
+    .mock-main { padding: 12px 12px 14px; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .masthead { animation: rise .5s ease-out both; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">IGUP — 買い切り・PC完結型の運用ツール</p>
+    <h1>Instagram・Threads・LINEの運用を、<br>あなたのPCひとつから。</h1>
+    <p class="tagline">キーワード自動返信・予約投稿・分析・LINEセミナー集客までを、月額サービスにデータを預けず、すべてこのPCのなかで完結させる買い切りのデスクトップアプリです。</p>
+    <div class="hero-cta">
+      <a class="btn primary" href="https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXY" target="_blank" rel="noopener">販売ページを開く</a>
+      <a class="btn ghost" href="install.html">インストール手順を見る</a>
+      <span class="sub-note">価格は販売ページをご確認ください</span>
+    </div>
+    <div class="hero-badges" aria-label="IGUPの特長">
+      <span class="strong">買い切りライセンス</span>
+      <span>macOS・Windows対応</span>
+      <span>データはPC内に保存</span>
+      <span>複数アカウント対応</span>
+      <span>繰り返し予約投稿</span>
+      <span>CSV一括インポート</span>
+      <span>AI文章生成</span>
+    </div>
+
+    <div class="mock" role="img" aria-label="IGUPの画面イメージ。左側にダッシュボード・接続・投稿・カレンダー・ルール・分析などのメニュー、右側に予約投稿の一覧。複数アカウントの切り替えチップ、繰り返し予定のバッジ、CSV読み込みやAI文案作成のボタンが並んでいる。">
+      <div class="mock-bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="mock-title mono">IGUP — 投稿</span>
+      </div>
+      <div class="mock-body">
+        <div class="mock-nav" aria-hidden="true">
+          <div class="mock-brand">IGUP</div>
+          <div class="mock-link">ダッシュボード</div>
+          <div class="mock-link">接続</div>
+          <div class="mock-link on">投稿</div>
+          <div class="mock-link">カレンダー</div>
+          <div class="mock-link">ルール</div>
+          <div class="mock-link">分析</div>
+          <div class="mock-link">セミナー</div>
+          <div class="mock-link">ログ</div>
+          <div class="mock-link">設定</div>
+        </div>
+        <div class="mock-main" aria-hidden="true">
+          <div class="mock-head">
+            <span class="mock-h">予約投稿</span>
+            <span class="mock-btn">CSV読み込み</span>
+            <span class="mock-btn">✨ AIで文案を作成</span>
+            <span class="mock-btn fill">＋投稿を予約</span>
+          </div>
+          <div class="mock-chips">
+            <span class="mock-chip on">@sweets.riko</span>
+            <span class="mock-chip">@riko.staff</span>
+            <span class="mock-chip">Threads: @riko</span>
+          </div>
+          <div class="mock-list">
+            <div class="mock-row">
+              <time>09/19 (金) 19:00</time>
+              <span class="mock-kind hot">リール</span>
+              <span class="mock-cap">新作スイーツのご紹介。今週のラインナップは…</span>
+              <span class="mock-rec">毎週(金) 19:00</span>
+            </div>
+            <div class="mock-row">
+              <time>09/20 (土) 10:30</time>
+              <span class="mock-kind">カルーセル</span>
+              <span class="mock-cap">週末の限定メニュー4選。店舗ログとあわせて。</span>
+            </div>
+            <div class="mock-row">
+              <time>10/01 (木) 09:30</time>
+              <span class="mock-kind">Threads</span>
+              <span class="mock-cap">連載3本目：小さな店のSNS集客の基本</span>
+              <span class="mock-rec">毎月15日 10:00</span>
+            </div>
+            <div class="mock-row">
+              <time>10/15 (木) 20:00</time>
+              <span class="mock-kind">フィード画像</span>
+              <span class="mock-cap">月次の営業カレンダーとお知らせ。</span>
+            </div>
+          </div>
+          <div class="mock-foot">
+            <span>✓ CSVから12件の予約を読み込みました</span>
+            <span class="dash">問題のあった2行はスキップ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="can">
+    <h2>できること</h2>
+    <p class="section-lead">自動返信からLINEセミナー集客まで、Instagram運用に必要な機能をひとつのアプリにまとめています。運用の自動化はすべてPCの上で実行されます。</p>
+
+    <h3 class="sub" style="margin-top: 36px;">今バージョンで新しく加わったこと</h3>
+    <div class="feature-grid">
+      <article class="feature">
+        <div class="step-num new">01</div>
+        <h3>複数アカウント管理</h3>
+        <p>Instagramアカウントを複数接続して切り替え運用。予約投稿・自動返信・分析をアカウントごとに分けて管理でき、1つのアカウントに問題が起きても他のアカウントの自動化は止まりません。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num new">02</div>
+        <h3>繰り返し予約投稿</h3>
+        <p>「毎日9時」「毎週月・木20時」「毎月15日」といった繰り返しを1件の設定に。投稿が済むと次の予定を自動で立ち上げるので、定期コンテンツを一度組めば続けられます。終了日も指定可能。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num new">03</div>
+        <h3>CSV一括インポート</h3>
+        <p>予約投稿をCSVでまとめて登録。日時・種別・キャプション・メディア・繰り返しを行ごとに読み込み、問題のある行だけをプレビューで確認してスキップできます。サンプルCSVの書き出しにも対応。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num new">04</div>
+        <h3>AI文章生成（任意）</h3>
+        <p>キャプション案3つとハッシュタグをAIが生成。OpenAI互換API・Anthropic（Claude）など自分のAPIキーを使う方式で、キーはOSの暗号化でPCにだけ保存。設定しなくても他の機能はすべて使えます。</p>
+      </article>
+    </div>
+
+    <h3 class="sub">自動返信とメッセージ</h3>
+    <div class="feature-grid">
+      <article class="feature">
+        <div class="step-num">05</div>
+        <h3>キーワード自動返信</h3>
+        <p>コメント・DM・ストーリーズ返信・ライブ配信コメントに反応し、公開返信（3パターンまでランダム）とDMを自動送信します。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">06</div>
+        <h3>リンク付きボタン</h3>
+        <p>DMにWebサイトへのボタンや、別の自動返信につながる選択式ボタン（最大3つ）・クイックリプライ（最大13個）を添付できます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">07</div>
+        <h3>メッセージ連鎖</h3>
+        <p>ボタンやクイックリプライのタップをきっかけに、別のルールのDMを続けて送る会話の分岐を作れます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">08</div>
+        <h3>時間差送信</h3>
+        <p>最初のDMの後、指定した時間（1分〜23時間）が経ってから追加のメッセージを自動送信します。</p>
+      </article>
+    </div>
+
+    <h3 class="sub">予約投稿とコンテンツ</h3>
+    <div class="feature-grid">
+      <article class="feature">
+        <div class="step-num">09</div>
+        <h3>予約投稿</h3>
+        <p>フィード画像・カルーセル（2〜10枚）・リール（表紙画像つき）・ストーリーズを日時指定で自動投稿します。投稿後、そのメディアに自動返信ルールを紐づけられます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">10</div>
+        <h3>Threads予約投稿</h3>
+        <p>複数の投稿をツリーとして連結したり、最大20枚のカルーセルを予約投稿できます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">11</div>
+        <h3>カレンダー管理</h3>
+        <p>予約投稿とメモを月表示で確認できます。メモは色分けして予定を整理できます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">12</div>
+        <h3>画像アップロード＆切り抜き</h3>
+        <p>ドラッグ＆ドロップでPC内の画像を取り込み、投稿種別ごとの比率でクロップ・並び替えできます。PNGは自動でJPEGに変換します。</p>
+      </article>
+    </div>
+
+    <h3 class="sub">分析と計測</h3>
+    <div class="feature-grid">
+      <article class="feature">
+        <div class="step-num">13</div>
+        <h3>タップ分析</h3>
+        <p>DMのボタン・クイックリプライについて、届いた数・見られた数・押された数を記録します。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">14</div>
+        <h3>計測リンク</h3>
+        <p>短縮リンクを発行し、クリック数を媒体別・日別・ランキングで確認できます。プレビュー用のクローラーアクセスは集計から除きます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">15</div>
+        <h3>投稿インサイト</h3>
+        <p>投稿ごとの反応をTop10表示し、フォロワー・リーチの推移をグラフで確認できます。24時間で消えるストーリーズの数値も、消える前に保存します。</p>
+      </article>
+    </div>
+
+    <h3 class="sub">集客と運用</h3>
+    <div class="feature-grid">
+      <article class="feature">
+        <div class="step-num">16</div>
+        <h3>LINEセミナー連携</h3>
+        <p>申込ページを公開し、申込者へLINEでお礼とリマインド（複数回設定可）を自動送信します。日程は複数設定でき、申込ページのQRコードも発行します。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">17</div>
+        <h3>ライブ配信コメントへの自動DM</h3>
+        <p>ライブ配信中のコメントにも、通常のコメントと同じルールで自動返信できます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">18</div>
+        <h3>送受信ログ</h3>
+        <p>受信・送信・投稿・分析・セミナー・リンクの記録を、カテゴリごとに確認できます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">19</div>
+        <h3>画面カラー変更</h3>
+        <p>テーマ（ライト／ダーク／OSに合わせる）とアクセントカラーを自由に変更できます。</p>
+      </article>
+      <article class="feature">
+        <div class="step-num">20</div>
+        <h3>ローカルAPI</h3>
+        <p>Claude CodeなどのAIツールから、画面を使わずに投稿予約やルール作成、分析取得を行えるHTTP APIです（既定は無効）。</p>
+      </article>
+    </div>
+
+    <div class="callout">
+      <p class="label">設計の方針</p>
+      <p>自動返信や予約投稿の判断・実行はすべてこのPC上で行われます。サーバー（ブローカー）はOAuthの中継とWebhookの取り次ぎ、画像の一時公開だけを担当する薄い窓口で、投稿・DM・分析はPCから直接各サービスへアクセスします。</p>
+    </div>
+  </section>
+
+  <section id="compare">
+    <h2>買い切りで選ぶ理由</h2>
+    <p class="section-lead">IGUPは一度の購入で使い続けられる買い切りアプリです。運用のデータと自動化の実行を、自分のPCに置いたままにできます。</p>
+    <div class="scroll">
+      <table class="compare">
+        <thead>
+          <tr><th scope="col">項目</th><th scope="col">IGUP（買い切り・PC完結）</th><th scope="col">一般的な月額クラウドSaaS</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">費用</th>
+            <td class="ours">一度の購入で継続利用。追加の月額費用はありません。</td>
+            <td>月額（または年額）の継続課金。支払いが止まると使えなくなります。</td>
+          </tr>
+          <tr>
+            <th scope="row">データの置き場所</th>
+            <td class="ours">ルール・予約・分析データはPC内。トークン類はOSの暗号化で保護されます。</td>
+            <td>サービス提供者のクラウド上に保存されます。</td>
+          </tr>
+          <tr>
+            <th scope="row">自動化の実行場所</th>
+            <td class="ours">自分のPC上。設定内容やログもPCから出ません。</td>
+            <td>ベンダーのクラウド上で実行されます。</td>
+          </tr>
+          <tr>
+            <th scope="row">複数アカウント</th>
+            <td class="ours">Instagramアカウントを複数接続し、アカウント別に予約・返信・分析を管理。</td>
+            <td>アカウント追加が上位プランの特典になっているサービスも少なくありません。</td>
+          </tr>
+          <tr>
+            <th scope="row">解約・利用停止のとき</th>
+            <td class="ours">アプリとデータはPCに残ります。データはJSONで書き出し可能。</td>
+            <td>解約後に設定や履歴へアクセスできなくなるのが一般的です。</td>
+          </tr>
+          <tr>
+            <th scope="row">サービス障害への依存</th>
+            <td class="ours">投稿・返信にはインターネットが必要ですが、閲覧や編集はPC内で完結します。</td>
+            <td>ベンダー側の障害・仕様変更の影響を直接受けます。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="compare-note">※「一般的な月額クラウドSaaS」の列は一般的な傾向を示したもので、特定のサービスについての説明ではありません。</p>
+  </section>
+
+  <section id="how">
+    <h2>仕組み</h2>
+    <div class="prose">
+      <p>IGUPは「あなたのPCで動くデスクトップアプリ」と「OAuthやWebhookの窓口となるサーバー（ブローカー）」の2つで構成されます。投稿・DM送信・分析取得・LINE送信は、すべてPCから各サービスへ直接行われます。複数のInstagramアカウントを接続した場合も、アカウントごとにやり取りが分かれて管理されます。</p>
+    </div>
+
+    <figure class="figure-panel">
+      <div class="scroll">
+        <svg class="seq" viewBox="0 0 900 500" role="img" aria-label="データの流れ。IGUPデスクトップ、ブローカー、Meta API（Instagram・Threads）、LINEの4者間のやり取りを示す。ブローカーはOAuth中継とWebhook取り次ぎ、画像の一時公開だけを担当し、投稿・DM送信・分析取得・LINE送信はPCから直接行われる。動画とアクセストークンはブローカーを経由しない。">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 Z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <g class="zone">
+            <line x1="10" y1="24" x2="205" y2="24"/>
+            <line x1="225" y1="24" x2="420" y2="24"/>
+            <line x1="440" y1="24" x2="890" y2="24"/>
+            <text x="107" y="28">あなたのPC</text>
+            <text x="322" y="28">公開ホスト</text>
+            <text x="665" y="28">外部サービス（Meta・LINE）</text>
+          </g>
+
+          <line class="life" x1="110" y1="72" x2="110" y2="470"/>
+          <line class="life" x1="340" y1="72" x2="340" y2="470"/>
+          <line class="life" x1="570" y1="72" x2="570" y2="470"/>
+          <line class="life" x1="790" y1="72" x2="790" y2="470"/>
+
+          <g class="actor">
+            <rect x="25" y="40" width="170" height="32" rx="4"/>
+            <text x="110" y="61">IGUPデスクトップ</text>
+            <rect x="270" y="40" width="140" height="32" rx="4"/>
+            <text x="340" y="61">ブローカー</text>
+            <rect x="505" y="40" width="130" height="32" rx="4"/>
+            <text x="570" y="61">Meta API</text>
+            <rect x="740" y="40" width="100" height="32" rx="4"/>
+            <text x="790" y="61">LINE</text>
+          </g>
+
+          <g class="tag">
+            <rect x="280" y="80" width="120" height="20" rx="10"/>
+            <text x="340" y="94">App Secret を保持</text>
+          </g>
+
+          <g class="msg">
+            <line x1="110" y1="120" x2="338" y2="120" marker-end="url(#ah)"/>
+            <text x="225" y="113">① OAuth中継・Webhook購読・画像の一時公開</text>
+
+            <line x1="340" y1="165" x2="568" y2="165" marker-end="url(#ah)"/>
+            <text x="455" y="158">② 認証コードをトークンに交換</text>
+            <text class="hl" x="455" y="180">App Secret を使用</text>
+
+            <line x1="570" y1="225" x2="342" y2="225" marker-end="url(#ah)"/>
+            <text x="455" y="218">③ Webhook通知（新着コメント・DM）</text>
+
+            <line class="ret" x1="340" y1="270" x2="112" y2="270" marker-end="url(#ah)"/>
+            <text x="225" y="263">④ イベント・クリック・申込を配信</text>
+
+            <line x1="110" y1="325" x2="568" y2="325" marker-end="url(#ah)"/>
+            <text x="340" y="318">⑤ 投稿・DM送信・分析取得（PCから直接）</text>
+            <text class="hl" x="340" y="347">動画もブローカーを経由しません</text>
+
+            <line x1="110" y1="392" x2="788" y2="392" marker-end="url(#ah)"/>
+            <text x="450" y="385">⑥ お礼・リマインドをLINEへ直接送信</text>
+          </g>
+
+          <g class="tag">
+            <rect x="15" y="425" width="200" height="40" rx="4"/>
+            <text x="115" y="442">アクセストークンなどを</text>
+            <text x="115" y="457">暗号化してPC内に保存</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>データの流れ。ブローカーはOAuthの中継とWebhookの取り次ぎ、画像の一時公開だけを担当し、投稿・DM送信・分析取得・LINE送信はPCからそれぞれのAPIへ直接行われます。動画とアクセストークンはブローカーを経由しません。</figcaption>
+    </figure>
+
+    <ul class="points">
+      <li><strong>複数アカウントでも同じ仕組み。</strong>アカウントごとに接続し、それぞれのトークンでPCから投稿・返信します。1つのアカウントでエラーが起きても、ほかのアカウントの自動化は続きます。</li>
+      <li><strong>PCが動いている間だけ自動化が動く。</strong>Webhookまたは定期確認でコメント・DMを検知し、予約時刻にはPCから直接投稿を公開します。PCがスリープの間は止まり、猶予時間内の予約は起動時に自動で投稿します。</li>
+      <li><strong>AI文章生成はキー持ち込み方式。</strong>ご自身のAI APIキーを使い、やり取りはPCから直接AIのAPIへ。キーはOSの暗号化で保存され、IGUPのサーバーには送られません。</li>
+    </ul>
+  </section>
+
+  <section id="safety">
+    <h2>安全性の設計</h2>
+    <ul class="points">
+      <li><strong>パスワードをIGUPに渡さない。</strong>接続は本人がブラウザでログインして許可を出すOAuth方式。IGUPはID・パスワードを保存しません。</li>
+      <li><strong>秘密情報はPCの中だけ。</strong>アクセストークン、LINEチャネルトークン、ローカルAPIトークン、AI APIキーは、Electronの<code class="mono">safeStorage</code>（macOSはキーチェーン、WindowsはDPAPI）でこのPC内に暗号化保存され、バックアップ書き出しにも含まれません。</li>
+      <li><strong>ブローカーはトークンを持たない。</strong>OAuthの交換結果は最大5分だけメモリに置かれ、アプリが一度きりのコードで受け取った後は破棄されます。</li>
+      <li><strong>動画はPCから直接。</strong>動画はこのPCからInstagramの再開可能アップロードで直接送られ、ブローカーには保存されません。画像は一時公開されますが既定24時間で自動削除されます。</li>
+      <li><strong>ローカルAPIは外に出ない。</strong>AIツール向けのローカルAPIは既定で無効、有効にしても<code class="mono">127.0.0.1</code>にのみバインドし、トークンを持つプロセスからしかアクセスできません。</li>
+      <li><strong>画面とOSを切り離す。</strong>アプリの画面部分はOSやネットワークに直接触れられない構成（contextIsolation・sandbox有効、nodeIntegration無効）です。</li>
+    </ul>
+  </section>
+
+  <section id="env">
+    <h2>動作環境</h2>
+    <div class="spec-table">
+      <div class="spec-row"><span class="k">macOS</span><span class="v">Apple Silicon と Intel の両方に対応（DMG）</span></div>
+      <div class="spec-row"><span class="k">Windows</span><span class="v">Windows 10 / 11（64bit、NSISインストーラー）</span></div>
+      <div class="spec-row"><span class="k">インストール</span><span class="v">コード署名なしで配布しています。初回起動時のみOSの警告を解除する手順が必要です。詳しくは<a href="install.html">インストール手順</a>を参照してください。</span></div>
+      <div class="spec-row"><span class="k">接続するアカウント</span><span class="v">Instagramプロアカウント（ビジネスまたはクリエイター）が必須。個人アカウントはInstagram側で切り替えてから接続します。</span></div>
+      <div class="spec-row"><span class="k">Threads（任意）</span><span class="v">Threads予約投稿を使う場合のみ接続します。</span></div>
+      <div class="spec-row"><span class="k">LINE（任意）</span><span class="v">LINE公式アカウントとMessaging APIチャネル（セミナー連携を使う場合）。</span></div>
+      <div class="spec-row"><span class="k">AI文章生成（任意）</span><span class="v">OpenAI互換APIまたはAnthropic（Claude）のAPIキー。設定しなくても他の機能はすべて使えます。</span></div>
+      <div class="spec-row"><span class="k">ブローカー</span><span class="v">購入時に案内されるサーバーURLを設定画面に入力するだけで接続できます。</span></div>
+    </div>
+  </section>
+
+  <section id="setup">
+    <h2>セットアップの流れ</h2>
+    <ol class="flow">
+      <li><strong>インストールする。</strong>DMG（macOS）またはインストーラー（Windows）を実行。初回だけ「右クリック→開く」や「詳細情報→実行」などOSの警告解除が必要です（<a href="install.html">手順書</a>）。</li>
+      <li><strong>ブローカーURLを入力する。</strong>購入時に案内されたサーバーURLを「設定」に入力し、接続テストで確認します。</li>
+      <li><strong>Instagramに接続する。</strong>「接続」画面からブラウザでログインして許可を出すだけ。Threads・LINE・AI APIキーは必要になったときに追加できます。</li>
+      <li><strong>自動運転をオンにする。</strong>自動返信ルールと予約投稿を整えて有効化。あとはPCが動いている間、返信・投稿・分析の記録が自動で進みます。</li>
+    </ol>
+  </section>
+
+  <section id="faq">
+    <h2>よくあるご質問</h2>
+    <div class="faq">
+      <div class="qa">
+        <p class="q">Q. 「開発元が確認できません」という警告が出ます。安全ですか？</p>
+        <p class="a">AppleやMicrosoftの有料開発者証明書を使っていないため、初回起動時にのみ表示されるOSの確認です。IGUPはPCのなかでだけ動くアプリで、取得したトークンはOSの暗号化領域に保存され、設定の書き出しにも含まれません。解除手順は<a href="install.html">インストール手順</a>にまとめています。</p>
+      </div>
+      <div class="qa">
+        <p class="q">Q. サーバー（ブローカー）は何をしているのですか？自分で用意する必要がありますか？</p>
+        <p class="a">OAuthの中継・Webhookの取り次ぎ・画像の一時公開・計測リンクとセミナー申込ページの公開だけを担当する薄い窓口で、アクセストークンは保持しません。ご購入者は案内されたURLを設定画面に入力するだけでよく、ご自身でサーバーを用意する必要はありません。</p>
+      </div>
+      <div class="qa">
+        <p class="q">Q. Meta開発者アプリの作成や審査は自分で行いますか？</p>
+        <p class="a">必要ありません。ご自身のInstagramアカウントでブラウザからログインして許可を出すだけで接続できます。用意していただくのはInstagramプロアカウント（ビジネスまたはクリエイター）だけです。</p>
+      </div>
+      <div class="qa">
+        <p class="q">Q. アップデートはどうすればいいですか？</p>
+        <p class="a">新しいバージョンのインストーラーを同じ手順で実行すると上書きされ、投稿データや設定はそのまま引き継がれます。バージョンの提供状況は販売ページをご確認ください。</p>
+      </div>
+      <div class="qa">
+        <p class="q">Q. PCの電源が落ちている間も自動返信や予約投稿は動きますか？</p>
+        <p class="a">いいえ。IGUPはPC内で動くアプリなので、スリープや電源オフの間は止まります。起動時に猶予時間内だった予約は自動で投稿され、猶予を過ぎたものは「未投稿」として確認できます。</p>
+      </div>
+      <div class="qa">
+        <p class="q">Q. 複数のInstagramアカウントや、会社と個人での使い分けはできますか？</p>
+        <p class="a">できます。複数のInstagramアカウントをこのPCに接続し、アカウントを切り替えながら予約投稿・自動返信・分析を管理できます。予約投稿はアカウントごとに作成され、片方のアカウントに問題が起きても他のアカウントは動き続けます。</p>
+      </div>
+      <div class="qa">
+        <p class="q">Q. 価格を知りたいです。</p>
+        <p class="a">価格は販売ページをご確認ください。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="buy">
+    <h2>まずは内容をご確認ください</h2>
+    <div class="cta-panel">
+      <h2>運用の自動化を、自分のPCに取り戻す。</h2>
+      <p class="lead">IGUPは、自動返信・予約投稿・分析・LINE集客をひとつのアプリにまとめた買い切りデスクトップアプリです。導入後は購入時に案内されたサーバーURLを入力してInstagramに接続するだけで始められます。</p>
+      <a class="btn primary big" href="https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXY" target="_blank" rel="noopener">販売ページを開く</a>
+      <p class="cta-note">価格は販売ページをご確認ください。</p>
+      <p class="cta-links">
+        <a href="install.html">インストール手順</a>·<a href="usage.html">取扱説明書</a>·<a href="overview.html">製品概要（技術詳細）</a>
+      </p>
+    </div>
+  </section>
+
+  <footer class="note">
+    <p>IGUPの画面表示や仕様は今後のアップデートで変更される場合があります。Instagram、ThreadsはMeta Platforms, Inc.の商標または登録商標です。LINEはLY Corporationの商標です。当製品はこれらの企業・サービスの提供物ではありません。</p>
+    <nav aria-label="ドキュメント">
+      <a href="install.html">インストール手順</a>
+      <a href="usage.html">取扱説明書</a>
+      <a href="overview.html">製品概要</a>
+    </nav>
+  </footer>
+
+</div>
+</body>
+</html>

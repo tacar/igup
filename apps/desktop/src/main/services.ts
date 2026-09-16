@@ -813,7 +813,7 @@ export class Services {
     const asRecord = (payload: unknown): Record<string, unknown> => (payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {});
     return [
       { method: "GET", path: "/status", handler: () => this.connectionStatus() },
-      { method: "GET", path: "/account", handler: () => this.account() },
+      { method: "GET", path: "/account", handler: (_payload, query) => this.account(query.get("accountId") ?? undefined) },
       { method: "GET", path: "/rules", handler: () => this.listRules() },
       { method: "POST", path: "/rules", handler: (payload) => this.saveRule(asRecord(payload) as Partial<Rule>) },
       { method: "PUT", path: "/rules/:id", handler: (payload) => this.saveRule(asRecord(payload) as Partial<Rule>) },
@@ -824,11 +824,11 @@ export class Services {
       { method: "DELETE", path: "/posts/:id", handler: (payload) => { this.deletePost(String(asRecord(payload).id)); return { ok: true }; } },
       { method: "POST", path: "/posts/:id/publish", handler: (payload) => this.publishNow(String(asRecord(payload).id)) },
       { method: "POST", path: "/media/import", handler: (payload) => this.importMedia((asRecord(payload).paths as string[]) ?? []) },
-      { method: "GET", path: "/media", handler: (_payload, query) => this.recentMedia(Number(query.get("limit") ?? 25)) },
+      { method: "GET", path: "/media", handler: (_payload, query) => this.recentMedia(Number(query.get("limit") ?? 25), query.get("accountId") ?? undefined) },
       { method: "GET", path: "/memos", handler: () => this.data.get().memos },
       { method: "POST", path: "/memos", handler: (payload) => this.saveMemo(asRecord(payload) as Partial<CalendarMemo>) },
       { method: "DELETE", path: "/memos/:id", handler: (payload) => { this.deleteMemo(String(asRecord(payload).id)); return { ok: true }; } },
-      { method: "GET", path: "/insights", handler: () => this.insights.summary() },
+      { method: "GET", path: "/insights", handler: (_payload, query) => this.insights.summary(query.get("accountId") ?? undefined) },
       { method: "POST", path: "/insights/capture", handler: async () => { await this.insights.captureDaily(); await this.insights.captureStories(); return this.insights.summary(); } },
       { method: "GET", path: "/links", handler: () => this.listLinks() },
       { method: "POST", path: "/links", handler: (payload) => this.createLink(asRecord(payload) as { url: string; label: string; source: string; slug?: string }) },

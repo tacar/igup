@@ -25,8 +25,8 @@ curl -H "Authorization: Bearer <トークン>" http://127.0.0.1:42814/status
 
 | メソッド | パス | 内容 |
 | --- | --- | --- |
-| GET | `/status` | 接続状態（Instagram / Threads / LINE / ブローカー）を取得 |
-| GET | `/account` | 接続中のInstagramプロアカウント情報を取得 |
+| GET | `/status` | 接続状態（Instagram / Threads / LINE / ブローカー）を取得。複数アカウント接続時は `accounts` 配列（各アカウントの接続状態）と `activeAccountId` を含みます |
+| GET | `/account` | Instagramプロアカウント情報を取得（`?accountId=` で対象を指定、省略時はアクティブアカウント） |
 | GET | `/rules` | 自動返信ルールの一覧を取得 |
 | POST | `/rules` | 自動返信ルールを新規作成 |
 | PUT | `/rules/:id` | 自動返信ルールを更新 |
@@ -37,11 +37,11 @@ curl -H "Authorization: Bearer <トークン>" http://127.0.0.1:42814/status
 | DELETE | `/posts/:id` | 予約投稿を削除 |
 | POST | `/posts/:id/publish` | 予約投稿を今すぐ公開 |
 | POST | `/media/import` | このPC上のファイルパスからメディアを取り込み |
-| GET | `/media` | 直近に取り込んだメディアの一覧を取得（`?limit=`） |
+| GET | `/media` | 直近に取り込んだメディアの一覧を取得（`?limit=`, `?accountId=`） |
 | GET | `/memos` | カレンダーメモの一覧を取得 |
 | POST | `/memos` | カレンダーメモを新規作成・更新 |
 | DELETE | `/memos/:id` | カレンダーメモを削除 |
-| GET | `/insights` | 分析サマリー（フォロワー推移・投稿インサイト・タップ分析）を取得 |
+| GET | `/insights` | 分析サマリー（フォロワー推移・投稿インサイト・タップ分析）を取得（`?accountId=` で対象を指定） |
 | POST | `/insights/capture` | 分析データを今すぐ取得（日次スナップショット＋ストーリーズ） |
 | GET | `/links` | 計測リンクの一覧を取得 |
 | POST | `/links` | 計測リンクを新規作成 |
@@ -57,6 +57,30 @@ curl -H "Authorization: Bearer <トークン>" http://127.0.0.1:42814/status
 `:id` や `:slug` を含むパスはURLのパラメータとして解釈され、リクエストボディへ自動的にマージされます（例: `DELETE /rules/rule_123` は `{ id: "rule_123" }` を処理関数に渡します）。
 
 各エンドポイントが受け付ける項目は、画面から保存できる項目と同じです（`apps/desktop/src/main/types.ts` の `Rule` / `ScheduledPost` / `CalendarMemo` / `Seminar` / `Settings` を参照）。項目名や制約（例: DM本文は1,000文字以内、公開返信は3パターンまで、時間差送信は1〜1,380分）は画面の入力欄と共通です。
+
+## 複数アカウントと accountId
+
+複数のInstagramアカウントを接続している場合、対象アカウントを次の方法で指定できます。省略した場合は「接続」画面で選択中のアクティブアカウントが使われます。
+
+- **`GET /status`** — `accounts` 配列（`id` / `username` / Instagram・Threadsの接続状態と期限）と `activeAccountId` を返します。ここで得た `id` を他の呼び出しに使います。トップレベルの `instagram` / `threads` フィールドは従来どおり、アクティブアカウントの状態を返します。
+- **`POST /posts` / `PUT /posts/:id` / `POST /rules` / `PUT /rules/:id` / `POST /memos` / `POST /seminars`** — ボディに任意の `accountId` を入れます（省略時はアクティブアカウント）。
+- **`GET /account` / `GET /insights` / `GET /media`** — クエリパラメータ `?accountId=acc_xxx` で対象を指定します。
+
+```sh
+# アカウント一覧を確認
+curl -H "Authorization: Bearer $TOKEN" "$BASE/status" | jq '.accounts'
+
+# 特定アカウントに予約投稿を作成（繰り返し指定つき）
+curl -X POST "$BASE/posts" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{
+    "accountId": "acc_abcdef",
+    "kind": "image",
+    "scheduledAt": "2026-10-01T10:00:00.000Z",
+    "caption": "新商品のお知らせ",
+    "recurrence": { "freq": "weekly", "interval": 1, "weekdays": [1, 4], "time": "20:00", "endAt": null }
+  }'
+```
 
 ## 使用例
 
