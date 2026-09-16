@@ -14,7 +14,7 @@ const CHANNELS = new Set([
   "links:list", "links:cached", "links:create", "links:delete",
   "seminars:list", "seminars:save", "seminars:delete", "seminars:sync", "seminars:qr",
   "logs:list", "logs:clear",
-  "settings:get", "settings:save", "localApi:token", "data:export", "data:import",
+  "settings:get", "settings:save", "ai:saveKey", "ai:status", "ai:generateCaption", "ai:generateHashtags", "ai:test", "localApi:token", "data:export", "data:import",
 ]);
 
 contextBridge.exposeInMainWorld("igup", {

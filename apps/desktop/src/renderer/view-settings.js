@@ -1,13 +1,17 @@
 /* Settings: appearance, automation timing, posting, insights, local API for AI tools, backup. */
 (() => {
-  const { api, h, replace, fmt, pageHead, guard, field, confirmDialog, toast, switchControl, copyText } = IGUP;
+  const { api, h, replace, fmt, pageHead, guard, field, confirmDialog, toast, switchControl, copyText, badge } = IGUP;
   const ACCENTS = ["#7c3aed", "#2563eb", "#0891b2", "#059669", "#d97706", "#dc2626", "#db2777", "#1f2937"];
+  const AI_DEFAULTS = {
+    openai: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+    anthropic: { baseUrl: "https://api.anthropic.com", model: "claude-haiku-4-5" },
+  };
 
   IGUP.views.settings = {
     title: "設定",
     icon: "⚙",
     async render(container) {
-      const [settings, info] = await Promise.all([api("settings:get"), api("app:info")]);
+      const [settings, info, aiStatus] = await Promise.all([api("settings:get"), api("app:info"), api("ai:status").catch(() => ({ configured: false, ai: null }))]);
       const draft = { ...settings };
       const theme = h("select", { value: settings.theme, onChange: (event) => { draft.theme = event.target.value; IGUP.applyTheme(draft); } }, h("option", { value: "system" }, "OSに合わせる"), h("option", { value: "light" }, "ライト"), h("option", { value: "dark" }, "ダーク"));
       const accentInput = h("input", { type: "color", value: settings.accent, onInput: (event) => { draft.accent = event.target.value; IGUP.applyTheme(draft); } });
@@ -25,6 +29,25 @@
       portInput.addEventListener("input", renderUsage);
       const brokerInput = h("input", { type: "text", placeholder: "https://broker.example.com", value: settings.brokerUrl ?? "", onInput: (event) => { draft.brokerUrl = event.target.value; } });
       const brokerTest = h("p", { class: "hint" }, `現在: ${info.brokerUrl}`);
+
+      // ---- AI text generation (optional, bring-your-own key; the key goes to encrypted storage, not settings) ----
+      const ai = { ...(aiStatus.ai ?? { provider: "openai", baseUrl: AI_DEFAULTS.openai.baseUrl, model: AI_DEFAULTS.openai.model }) };
+      const aiKeyInput = h("input", { type: "password", placeholder: aiStatus.configured ? "（保存済み・入力で上書き）" : "sk-... など", value: "", autocomplete: "new-password" });
+      const aiBaseUrl = h("input", { type: "text", value: ai.baseUrl, onInput: (event) => { ai.baseUrl = event.target.value; } });
+      const aiModel = h("input", { type: "text", value: ai.model, onInput: (event) => { ai.model = event.target.value; } });
+      const aiProvider = h("select", { value: ai.provider, onChange: (event) => {
+        ai.provider = event.target.value;
+        const fallback = AI_DEFAULTS[ai.provider];
+        const known = (value) => Object.values(AI_DEFAULTS).some((entry) => entry.baseUrl === value || entry.model === value);
+        if (!aiBaseUrl.value.trim() || known(aiBaseUrl.value.trim())) { aiBaseUrl.value = fallback.baseUrl; ai.baseUrl = fallback.baseUrl; }
+        if (!aiModel.value.trim() || known(aiModel.value.trim())) { aiModel.value = fallback.model; ai.model = fallback.model; }
+      } }, h("option", { value: "openai" }, "OpenAI互換（OpenAI など）"), h("option", { value: "anthropic" }, "Anthropic（Claude）"));
+      const aiResult = h("p", { class: "hint" });
+
+      async function saveAi({ withKey = true } = {}) {
+        await api("settings:save", { ai: { provider: ai.provider, baseUrl: aiBaseUrl.value.trim(), model: aiModel.value.trim() } });
+        if (withKey && aiKeyInput.value.trim()) await api("ai:saveKey", { key: aiKeyInput.value.trim() });
+      }
 
       async function save(patch) {
         await api("settings:save", patch ?? draft);
@@ -53,6 +76,37 @@
             h("h2", {}, "画面"),
             field("テーマ", theme),
             field("アクセントカラー", swatches, "ボタンや強調色に使われます。"),
+          ),
+          h("div", { class: "card", style: { gridColumn: "1 / -1" } },
+            h("h2", {}, "AI文章生成（任意） ", aiStatus.configured ? badge("設定済み", "ok") : h("span", { class: "muted small" }, "未設定")),
+            h("p", { class: "muted small" }, "自分のAI APIキーを使って、予約投稿のキャプション案とハッシュタグを生成できます。キーはこのPCのOS暗号化で保存され、バックアップファイルには含まれません。設定しなくてもIGUPの他の機能はすべて使えます。"),
+            h("div", { class: "grid cols-2" },
+              field("プロバイダー", aiProvider),
+              field("モデル", aiModel, "例: gpt-4o-mini / claude-haiku-4-5"),
+              field("APIベースURL", aiBaseUrl, "OpenAI互換の他サービスのURLを指定できます。"),
+              field("APIキー", aiKeyInput, "保存済みのキーは表示されません。入力して保存すると上書きされます。"),
+            ),
+            h("div", { class: "row" },
+              h("button", { type: "button", onClick: (event) => guard(event.currentTarget, async () => {
+                await saveAi();
+                aiResult.textContent = "AIの設定を保存しました。";
+                toast("AIの設定を保存しました。");
+              }) }, "AI設定を保存"),
+              h("button", { class: "secondary", type: "button", onClick: (event) => guard(event.currentTarget, async () => {
+                await saveAi();
+                const result = await api("ai:test");
+                aiResult.textContent = `接続テストOK（${result.provider} / ${result.model}）`;
+              }) }, "接続テスト"),
+              aiStatus.configured ? h("button", { class: "ghost danger", type: "button", onClick: async (event) => {
+                if (!await confirmDialog("保存済みのAI APIキーを削除しますか？", { danger: true, okLabel: "削除" })) return;
+                await guard(event.currentTarget, async () => {
+                  await api("ai:saveKey", { key: null });
+                  aiKeyInput.value = "";
+                  aiResult.textContent = "APIキーを削除しました。";
+                });
+              } }, "キーを削除") : null,
+            ),
+            aiResult,
           ),
           h("div", { class: "card" },
             h("h2", {}, "自動返信の動作"),

@@ -251,6 +251,19 @@ export type Contact = {
   readCounted: boolean;
 };
 
+/**
+ * AI text generation (optional, bring-your-own key). The key itself never lives here —
+ * it is stored encrypted in ConnectionStorage (aiApiKey).
+ */
+export type AiSettings = {
+  provider: "openai" | "anthropic";
+  baseUrl: string;
+  model: string;
+};
+
+export const DEFAULT_AI_SETTINGS: AiSettings = { provider: "openai", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" };
+export const ANTHROPIC_AI_SETTINGS: AiSettings = { provider: "anthropic", baseUrl: "https://api.anthropic.com", model: "claude-haiku-4-5" };
+
 export type Settings = {
   brokerUrl: string;
   automationEnabled: boolean;
@@ -268,6 +281,7 @@ export type Settings = {
   accent: string;
   defaultCaption: string;
   privacyContact: string;
+  ai: AiSettings;
 };
 
 export type AppData = {
@@ -327,6 +341,7 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: "#7c3aed",
   defaultCaption: "",
   privacyContact: "",
+  ai: { ...DEFAULT_AI_SETTINGS },
 };
 
 export function emptyStats(): RuleStats {

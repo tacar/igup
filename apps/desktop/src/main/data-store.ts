@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { DEFAULT_ACCOUNT_ID, emptyData, DEFAULT_SETTINGS, type AccountInfo, type AppData, type LogCategory, type LogEntry } from "./types.js";
+import { DEFAULT_ACCOUNT_ID, emptyData, DEFAULT_AI_SETTINGS, DEFAULT_SETTINGS, type AccountInfo, type AppData, type LogCategory, type LogEntry } from "./types.js";
 import { newId, nowIso } from "./ids.js";
 
 const LOG_LIMIT = 2_000;
@@ -209,7 +209,11 @@ export function migrateV1toV2(input: unknown): AppData {
     seen?: { comments?: unknown; messages?: unknown; brokerCursor?: unknown };
   };
   const data = emptyData();
-  data.settings = { ...DEFAULT_SETTINGS, ...(source.settings ?? {}) };
+  data.settings = {
+    ...DEFAULT_SETTINGS,
+    ...(source.settings ?? {}),
+    ai: { ...DEFAULT_AI_SETTINGS, ...(source.settings?.ai ?? {}) },
+  };
 
   const accounts = Array.isArray(source.accounts) ? source.accounts.map(accountInfoOf).filter((a): a is AccountInfo => a !== null) : [];
   if (accounts.length > 0) {

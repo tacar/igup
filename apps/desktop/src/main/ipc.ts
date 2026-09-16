@@ -121,6 +121,11 @@ export function ipcHandlers(services: Services, auth: DesktopAuth, window: () =>
 
     "settings:get": () => services.settings(),
     "settings:save": (payload) => services.saveSettings(record(payload) as Partial<Settings>),
+    "ai:saveKey": (payload) => services.saveAiKey(text(record(payload).key) || null),
+    "ai:status": () => services.aiStatus(),
+    "ai:generateCaption": (payload) => services.generateCaption(record(payload) as { brief: string }),
+    "ai:generateHashtags": (payload) => services.generateHashtags(record(payload) as { brief: string }),
+    "ai:test": () => services.aiTest(),
     "localApi:token": (payload) => services.localApiToken(Boolean(record(payload).regenerate)),
     "data:export": () => JSON.stringify(services.exportData(), null, 2),
     "data:import": (payload) => services.importData(text(record(payload).json)),
@@ -154,5 +159,5 @@ export const IPC_CHANNELS = [
   "links:list", "links:cached", "links:create", "links:delete",
   "seminars:list", "seminars:save", "seminars:delete", "seminars:sync", "seminars:qr",
   "logs:list", "logs:clear",
-  "settings:get", "settings:save", "localApi:token", "data:export", "data:import",
+  "settings:get", "settings:save", "ai:saveKey", "ai:status", "ai:generateCaption", "ai:generateHashtags", "ai:test", "localApi:token", "data:export", "data:import",
 ] as const;

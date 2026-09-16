@@ -98,8 +98,55 @@
     threads: "本文は各500文字まで。2つ目以降の項目は前の投稿への返信（ツリー投稿）として公開されます。1項目に画像・動画を2〜20枚入れるとカルーセルになります。",
   };
 
+  /** AI caption/hashtag drafts (needs an API key saved in Settings). */
+  function openAiCaptionModal({ postKind, captionEl }) {
+    const brief = h("textarea", { rows: 2, placeholder: "例: 焙煎したてのコーヒー豆の新発売。水出し専用パックが新登場" });
+    const tone = h("input", { type: "text", placeholder: "例: カジュアル／丁寧／高級感（空欄可）" });
+    const audience = h("input", { type: "text", placeholder: "例: 30代の女性・在宅ワーカー（空欄可）" });
+    const results = h("div", { class: "stack" });
+
+    function insertCaption(text) {
+      captionEl.value = text;
+      captionEl.dispatchEvent(new Event("input"));
+      toast("キャプションを挿入しました。内容を確認して調整してください。");
+      dialog.close();
+    }
+    function insertHashtags(tags) {
+      const addition = tags.join(" ");
+      captionEl.value = captionEl.value.trimEnd() ? `${captionEl.value.trimEnd()}\n\n${addition}` : addition;
+      captionEl.dispatchEvent(new Event("input"));
+      toast("ハッシュタグをキャプションに追加しました。");
+    }
+
+    const dialog = openModal({
+      title: "AIで文案を作成",
+      wide: true,
+      body: h("div", { class: "stack" },
+        h("p", { class: "hint" }, "テーマを書いて「生成する」を押すと、キャプション案とハッシュタグを提案します。APIキーの設定は設定画面で行います。"),
+        field("テーマ（何についての投稿？）", brief),
+        h("div", { class: "grid cols-2" }, field("トーン", tone), field("想定読者", audience)),
+        h("div", { class: "row" }, h("button", { type: "button", onClick: (event) => guard(event.currentTarget, async () => {
+          const ideas = await api("ai:generateCaption", { brief: brief.value, tone: tone.value, audience: audience.value, postKind, existingCaption: captionEl.value });
+          replace(results,
+            h("h3", {}, "キャプション案"),
+            ideas.captions.map((text, index) => h("div", { class: "card", style: { padding: "12px" } },
+              h("div", { class: "row between" }, h("strong", {}, `案${index + 1}`), h("button", { class: "secondary small", type: "button", onClick: () => insertCaption(text) }, "この案を挿入")),
+              h("p", { style: { whiteSpace: "pre-wrap", margin: "8px 0 0" } }, text),
+            )),
+            ideas.hashtags.length ? h("div", { class: "card", style: { padding: "12px" } },
+              h("div", { class: "row between" }, h("strong", {}, "ハッシュタグ"), h("button", { class: "secondary small", type: "button", onClick: () => insertHashtags(ideas.hashtags) }, "キャプションに追加")),
+              h("div", { class: "row wrap", style: { gap: "6px", marginTop: "8px" } }, ideas.hashtags.map((tag) => h("span", { class: "chip", style: { background: "var(--accent)" } }, tag))),
+            ) : null,
+          );
+        }) }, "生成する")),
+        results,
+      ),
+    });
+  }
+
   async function openEditor(existing, { publishNow = false, defaults = {} } = {}) {
-    const [rules, settings] = await Promise.all([api("rules:list"), api("settings:get")]);
+    const [rules, settings, aiStatus] = await Promise.all([api("rules:list"), api("settings:get"), api("ai:status").catch(() => ({ configured: false }))]);
+    const aiConfigured = Boolean(aiStatus.configured);
     const post = existing ? structuredClone(existing) : { kind: "image", scheduledAt: null, caption: "", media: [], cover: null, shareToFeed: true, threads: [{ text: "", media: [] }], attachRuleId: null, recurrence: null, accountId: IGUP.activeAccountId() ?? undefined, ...defaults };
     if (post.threads.length === 0) post.threads.push({ text: "", media: [] });
     const kindSelect = h("select", { value: post.kind }, Object.entries(POST_KIND).map(([key, meta]) => h("option", { value: key }, meta.label)));
@@ -200,7 +247,10 @@
           parts.push(h("label", { class: "inline" }, shareToFeed, " フィードにも表示する"));
         }
         if (kind !== "story") parts.push(field("キャプション", caption), captionCount,
-          settings.defaultCaption ? h("button", { class: "ghost small", type: "button", onClick: () => { caption.value = caption.value ? `${caption.value}\n\n${settings.defaultCaption}` : settings.defaultCaption; caption.dispatchEvent(new Event("input")); } }, "デフォルトキャプションを挿入") : null);
+          h("div", { class: "row" },
+            settings.defaultCaption ? h("button", { class: "ghost small", type: "button", onClick: () => { caption.value = caption.value ? `${caption.value}\n\n${settings.defaultCaption}` : settings.defaultCaption; caption.dispatchEvent(new Event("input")); } }, "デフォルトキャプションを挿入") : null,
+            aiConfigured ? h("button", { class: "ghost small", type: "button", onClick: () => openAiCaptionModal({ postKind: kind, captionEl: caption }) }, "✨ AIで文案を作成") : null,
+          ));
         if (kind !== "story") parts.push(field("投稿後に自動返信ルールへ紐づけ", attachSelect, "公開後、この投稿のIDを選んだルールの対象投稿に自動で追加します（「次のリールにも同じ自動返信」に便利）。"));
       }
       replace(mediaBox, parts);

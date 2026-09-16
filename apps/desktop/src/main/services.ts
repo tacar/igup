@@ -1,5 +1,6 @@
 import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
+import { AiError, generateIdeas, type AiIdeas } from "./ai-client.js";
 import { BrokerClient } from "./broker-client.js";
 import { DataStore } from "./data-store.js";
 import { decodeCsvBytes, parseImportRows } from "./csv-import.js";
@@ -19,10 +20,12 @@ import {
   emptyMessage,
   emptyStats,
   DEFAULT_ACCOUNT_ID,
+  DEFAULT_AI_SETTINGS,
   DEFAULT_SETTINGS,
   type Account,
   type AccountInfo,
   type AppData,
+  type AiSettings,
   type BrokerCapabilities,
   type CalendarMemo,
   type Connection,
@@ -662,7 +665,10 @@ export class Services {
 
   async saveSettings(patch: Partial<Settings>): Promise<Settings> {
     const before = { ...this.data.get().settings };
-    const next: Settings = { ...before, ...patch };
+    // the AI key lives only in encrypted ConnectionStorage — never accept it here (data:export serializes settings)
+    const { aiApiKey: _ignored, ...allowed } = patch as Partial<Settings> & { aiApiKey?: unknown };
+    void _ignored;
+    const next: Settings = { ...before, ...allowed };
     if (patch.brokerUrl !== undefined) next.brokerUrl = normalizeBrokerUrl(String(patch.brokerUrl));
     next.pollIntervalSec = clamp(Number(next.pollIntervalSec) || DEFAULT_SETTINGS.pollIntervalSec, 20, 3_600);
     next.brokerEventIntervalSec = clamp(Number(next.brokerEventIntervalSec) || DEFAULT_SETTINGS.brokerEventIntervalSec, 5, 600);
@@ -671,6 +677,14 @@ export class Services {
     next.storySnapshotIntervalMin = clamp(Number(next.storySnapshotIntervalMin) || DEFAULT_SETTINGS.storySnapshotIntervalMin, 15, 24 * 60);
     next.localApiPort = clamp(Number(next.localApiPort) || DEFAULT_SETTINGS.localApiPort, 1_024, 65_535);
     if (!/^#[0-9a-f]{6}$/i.test(next.accent)) next.accent = DEFAULT_SETTINGS.accent;
+    if (patch.ai !== undefined) {
+      const ai = patch.ai;
+      next.ai = {
+        provider: ai.provider === "anthropic" ? "anthropic" : "openai",
+        baseUrl: String(ai.baseUrl ?? "").trim() || before.ai.baseUrl || DEFAULT_AI_SETTINGS.baseUrl,
+        model: String(ai.model ?? "").trim() || before.ai.model || DEFAULT_AI_SETTINGS.model,
+      };
+    }
     if (patch.automationEnabled !== undefined && patch.automationEnabled !== before.automationEnabled) {
       const enabled = patch.automationEnabled;
       this.engine.setEnabled(enabled);
@@ -697,6 +711,68 @@ export class Services {
 
   async localApiToken(regenerate = false): Promise<string> {
     return this.options.secrets.localApiToken(regenerate);
+  }
+
+  // ---------------------------------------------------------------- AI text generation
+
+  /** Stores / clears the AI API key in encrypted ConnectionStorage (never in DataStore or exports). */
+  async saveAiKey(key: string | null): Promise<void> {
+    const trimmed = key && key.trim() ? key.trim() : null;
+    await this.options.secrets.saveAiKey(trimmed);
+    this.data.log("info", "system", trimmed ? "AI APIキーを保存しました" : "AI APIキーを削除しました");
+  }
+
+  async aiStatus(): Promise<{ configured: boolean; ai: AiSettings }> {
+    return { configured: Boolean(await this.options.secrets.loadAiKey()), ai: this.data.get().settings.ai };
+  }
+
+  /** Caption drafts plus related hashtags in one call. */
+  async generateCaption(payload: { brief: string; tone?: string; audience?: string; postKind?: string; existingCaption?: string }): Promise<AiIdeas> {
+    const ideas = await this.aiCall(this.aiPrompt(payload, "caption"));
+    this.data.log("info", "post", "AIで投稿文案を生成しました", `モデル: ${this.data.get().settings.ai.model}（キーや応答本文は記録しません）`);
+    return ideas;
+  }
+
+  async generateHashtags(payload: { brief: string; tone?: string; audience?: string; postKind?: string }): Promise<AiIdeas> {
+    const ideas = await this.aiCall(this.aiPrompt(payload, "hashtags"));
+    if (ideas.hashtags.length === 0) throw new AiError("AIの応答にハッシュタグが含まれていませんでした。もう一度お試しください。");
+    this.data.log("info", "post", "AIでハッシュタグを生成しました", `${ideas.hashtags.length}件`);
+    return ideas;
+  }
+
+  async aiTest(): Promise<{ provider: string; model: string }> {
+    const ai = this.data.get().settings.ai;
+    await this.aiCall("接続テストです。captionsには短いご挨拶を1案、hashtagsには2つほどのタグを入れて、JSONのみ返してください。");
+    this.data.log("info", "system", "AI APIの接続テストに成功しました", `${ai.provider} / ${ai.model}`);
+    return { provider: ai.provider, model: ai.model };
+  }
+
+  private async aiCall(prompt: string): Promise<AiIdeas> {
+    const ai = this.data.get().settings.ai;
+    const apiKey = await this.options.secrets.loadAiKey();
+    if (!apiKey) throw new AiError("AI APIキーが未設定です。設定画面でキーを保存してください。");
+    return generateIdeas({ ...ai, apiKey, prompt });
+  }
+
+  /** Japanese user prompt for the two modes; never includes secrets. */
+  private aiPrompt(payload: { brief?: string; tone?: string; audience?: string; postKind?: string; existingCaption?: string }, mode: "caption" | "hashtags"): string {
+    const KIND_LABELS: Record<string, string> = { image: "フィード画像", carousel: "カルーセル", reel: "リール（動画）", story: "ストーリーズ", threads: "Threads" };
+    const brief = String(payload.brief ?? "").trim();
+    if (!brief) throw new AiError("テーマ（何についての投稿か）を入力してください。");
+    const lines = [
+      `テーマ: ${brief.slice(0, 500)}`,
+      `投稿の種類: ${KIND_LABELS[String(payload.postKind ?? "image")] ?? "フィード画像"}`,
+      `トーン: ${String(payload.tone ?? "").trim() || "親しみやすい自然な口調"}`,
+      `想定読者: ${String(payload.audience ?? "").trim() || "指定なし"}`,
+    ];
+    if (mode === "caption") {
+      lines.push("各案は100〜400文字程度。冒頭に読者の目を引く一文、最後に行動を促す一文を入れてください。");
+    } else {
+      lines.push("hashtagsは10〜15個。大きな人気タグと、内容に即した具体的なタグを混ぜてください。captionsは空配列にしてください。");
+    }
+    const existing = String(payload.existingCaption ?? "").trim();
+    if (existing) lines.push(`現在の下書き（参考にしてください）:\n${existing.slice(0, 500)}`);
+    return lines.join("\n");
   }
 
   exportData(): AppData {
