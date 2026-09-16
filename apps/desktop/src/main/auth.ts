@@ -13,9 +13,13 @@ export class DesktopAuth {
   private server: Server | null = null;
 
   constructor(
-    private readonly brokerUrl: string,
+    private brokerUrl: string,
     private readonly onConnected: (connection: Connection, provider: Provider) => Promise<void>,
   ) {}
+
+  setUrl(url: string): void {
+    this.brokerUrl = url;
+  }
 
   async start(provider: Provider = "instagram"): Promise<void> {
     await this.ensureCallbackServer();

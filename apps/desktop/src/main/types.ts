@@ -218,6 +218,7 @@ export type Contact = {
 };
 
 export type Settings = {
+  brokerUrl: string;
   automationEnabled: boolean;
   pollIntervalSec: number;
   brokerEventIntervalSec: number;
@@ -273,6 +274,7 @@ export type BrokerEvent = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
+  brokerUrl: "",
   automationEnabled: false,
   pollIntervalSec: 60,
   brokerEventIntervalSec: 10,

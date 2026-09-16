@@ -22,6 +22,7 @@ const services = new Services({
   secrets: storage,
   notify,
   appVersion: app.getVersion(),
+  onBrokerUrlChanged: (url) => auth.setUrl(url),
 });
 
 const auth = new DesktopAuth(brokerUrl, async (connection, provider) => {

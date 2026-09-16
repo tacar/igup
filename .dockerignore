@@ -1,0 +1,11 @@
+.git
+node_modules
+**/node_modules
+**/dist
+**/release
+docs
+data
+apps/desktop/build
+apps/*/src/**/*.test.ts
+*.md
+!README.md

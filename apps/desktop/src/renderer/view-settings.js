@@ -23,6 +23,8 @@
       renderUsage();
       const portInput = num("localApiPort", 1024, 65535);
       portInput.addEventListener("input", renderUsage);
+      const brokerInput = h("input", { type: "text", placeholder: "https://broker.example.com", value: settings.brokerUrl ?? "", onInput: (event) => { draft.brokerUrl = event.target.value; } });
+      const brokerTest = h("p", { class: "hint" }, `現在: ${info.brokerUrl}`);
 
       async function save(patch) {
         await api("settings:save", patch ?? draft);
@@ -32,6 +34,21 @@
       replace(container,
         pageHead("設定", "動作の細かい調整。変更は「保存」で反映されます。", h("button", { type: "button", onClick: (event) => guard(event.currentTarget, () => save()) }, "すべて保存")),
         h("div", { class: "grid cols-2" },
+          h("div", { class: "card" },
+            h("h2", {}, "ブローカー接続"),
+            h("p", { class: "muted small" }, "購入時に発行されたサーバーURLを入力します。OAuthの窓口となるサーバーで、ここで接続テストが通れば他の設定は不要です。"),
+            field("ブローカーURL", brokerInput, "例: https://broker.example.com"),
+            h("div", { class: "row" },
+              h("button", { class: "secondary", type: "button", onClick: (event) => guard(event.currentTarget, async () => {
+                await api("settings:save", { brokerUrl: draft.brokerUrl ?? "" });
+                const caps = await api("connection:capabilities");
+                brokerTest.textContent = caps
+                  ? `接続OK（${caps.webhooks ? "Webhook利用可" : "Webhookなし・定期確認モード"}${caps.threads ? "・Threads可" : ""}）`
+                  : "接続できませんでした。URLとサーバーの起動を確認してください。";
+              }) }, "接続テスト"),
+            ),
+            brokerTest,
+          ),
           h("div", { class: "card" },
             h("h2", {}, "画面"),
             field("テーマ", theme),

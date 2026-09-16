@@ -29,6 +29,17 @@ Instagram（＋Threads・LINE）の運用を1台のPCだけで回すためのデ
 
 ブローカーはアクセストークンを保持しません。OAuth交換結果は最大5分だけメモリに置かれ、デスクトップアプリが一度きりのコードで取り出した後に破棄されます。取り出したアクセストークンはOSの暗号化機能（Electron `safeStorage`）でこのPCにだけ保存されます。
 
+## 配布ビルド（購入者向け）
+
+インストーラー版を使う場合、Node.js のセットアップは不要です。
+
+1. `IGUP-<バージョン>.dmg`（macOS）または `IGUP Setup <バージョン>.exe`（Windows）を実行してインストール
+2. 初回起動時はOSの警告（macOS: 右クリック→開く／Windows: 詳細情報→実行）を解除 — 手順は [`docs/install.html`](docs/install.html) を参照
+3. 「設定 > ブローカー接続」に案内されたサーバーURLを入力し、「接続テスト」で確認
+4. 「接続」画面からInstagramに接続して運用開始
+
+インストーラーはコード署名されていません（未署名）。データは購入者ごとのPCに保存され、開発環境のデータとは別の場所（macOS: `~/Library/Application Support/IGUP`、Windows: `%APPDATA%\IGUP`）に作られます。
+
 ## 必要なもの
 
 - Node.js 22以上
@@ -121,6 +132,8 @@ https://YOUR_BROKER_HOST/webhooks/instagram
 IGUP_BROKER_URL=https://YOUR_BROKER_HOST npm run dev:desktop
 ```
 
+ブローカーURLは「設定 > ブローカー接続」でも保存・変更できます（設定値が環境変数より優先され、保存後は再起動なしで切り替わります）。
+
 ローカルのブローカーで試す場合は既定値（`http://127.0.0.1:8787`）のまま起動できますが、実際にInstagram/ThreadsのOAuthとWebhookを通すには、ブローカーが公開HTTPSで到達できる必要があります（開発用トンネルなどを利用してください）。
 
 起動後、「接続」画面からInstagramに接続します。プロアカウントの認可が完了するとバッジが「接続済み」に変わり、以降の自動返信・予約投稿・分析取得が行えるようになります。
@@ -154,4 +167,11 @@ npm test
 npm run build
 ```
 
-各ワークスペースを個別に実行する場合は `npm run <script> -w @igup/desktop` / `-w @igup/broker` を使います。
+配布用インストーラー（macOS DMG / Windows NSIS、未署名）は次のコマンドで `apps/desktop/release/` に生成されます。
+
+```sh
+npm run dist:mac -w @igup/desktop   # macOS DMG（Intel + Apple Silicon）
+npm run dist:win -w @igup/desktop   # Windows NSIS
+```
+
+各ワークスペースを個別に実行する場合は `npm run <script> -w @igup/desktop` / `-w @igup/broker` を使います。ブローカーのサーバーへのデプロイ手順は [`apps/broker/DEPLOY.md`](apps/broker/DEPLOY.md) を参照してください。

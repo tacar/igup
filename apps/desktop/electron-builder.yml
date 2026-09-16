@@ -1,0 +1,28 @@
+appId: com.igup.desktop
+productName: IGUP
+directories:
+  output: release
+files:
+  - dist/**/*
+  - package.json
+asar: true
+mac:
+  identity: null
+  category: public.app-category.social-networking
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+publish: null

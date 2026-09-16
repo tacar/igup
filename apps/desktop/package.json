@@ -8,14 +8,22 @@
     "dev": "npm run build && electron .",
     "build": "rm -rf dist && tsc -p tsconfig.json && cp -R src/renderer dist/renderer && cp -R src/preload dist/preload",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src"
+    "test": "vitest run src",
+    "dist": "npm run build && electron-builder --mac --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win"
   },
   "devDependencies": {
-    "electron": "^44.3.0",
+    "electron": "44.3.0",
+    "electron-builder": "^26.15.3",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
   },
   "dependencies": {
     "qrcode": "^1.5.4"
+  },
+  "description": "Instagram / Threads / LINE の運用をPCひとつで回すデスクトップアプリ",
+  "author": {
+    "name": "IGUP"
   }
 }

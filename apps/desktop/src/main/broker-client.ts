@@ -5,7 +5,7 @@ import type { BrokerCapabilities, BrokerEvent, Connection, Seminar, SeminarAppli
 
 export class BrokerUnavailableError extends Error {
   constructor(brokerUrl: string) {
-    super(`認証サーバー（${brokerUrl}）に接続できません。サーバーが起動しているか、IGUP_BROKER_URL の設定を確認してください。`);
+    super(`認証サーバー（${brokerUrl}）に接続できません。サーバーが起動しているか、設定画面の「ブローカー接続」でURLを確認してください。`);
     this.name = "BrokerUnavailableError";
   }
 }
@@ -14,7 +14,11 @@ export type UploadedMedia = { id: string; url: string; expiresAt: string };
 
 /** Talks to the IGUP broker for everything that needs a public HTTPS host. */
 export class BrokerClient {
-  constructor(readonly brokerUrl: string) {}
+  constructor(public brokerUrl: string) {}
+
+  setBaseUrl(url: string): void {
+    this.brokerUrl = url;
+  }
 
   async capabilities(): Promise<BrokerCapabilities> {
     return this.call("GET", "/capabilities");

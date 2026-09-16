@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IGUP インストールガイド</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700;900&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+  :root {
+    color-scheme: light dark;
+    --ink: #1c1b17;
+    --ink-soft: #4a483f;
+    --muted: #6b6a5f;
+    --paper: #e7e8e1;
+    --surface: #f7f7f2;
+    --surface-2: #eeefe8;
+    --line: #c9c8bc;
+    --signal: #b23d1c;
+    --ok: #3f6b4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ede9df;
+      --ink-soft: #cfcabd;
+      --muted: #a6a398;
+      --paper: #17171a;
+      --surface: #201e1b;
+      --surface-2: #262320;
+      --line: #3a3733;
+      --signal: #e2653a;
+      --ok: #74ad82;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ede9df;
+    --ink-soft: #cfcabd;
+    --muted: #a6a398;
+    --paper: #17171a;
+    --surface: #201e1b;
+    --surface-2: #262320;
+    --line: #3a3733;
+    --signal: #e2653a;
+    --ok: #74ad82;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 16px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: "Zen Kaku Gothic New", "BIZ UDPGothic", sans-serif;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0;
+  }
+  a { color: var(--signal); }
+  a:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+  code, .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  code {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: .88em;
+  }
+  pre code { display: block; padding: 12px 16px; overflow-x: auto; }
+
+  .page { max-width: 860px; margin-inline: auto; padding: 48px 20px 96px; }
+  .prose { max-width: 40em; display: grid; gap: 14px; }
+  .prose p { margin: 0; color: var(--ink-soft); }
+  .prose p.lead { color: var(--ink); font-size: 1.08rem; }
+  section { margin-top: 56px; }
+  section > h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin-bottom: 18px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+
+  .masthead .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .masthead h1 {
+    font-size: clamp(2.2rem, 7vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: .01em;
+    margin-top: 10px;
+  }
+  .masthead .tagline { margin: 12px 0 0; color: var(--ink-soft); font-size: 1.05rem; max-width: 32em; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 8px 18px;
+    margin-top: 22px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .74rem; letter-spacing: .06em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .meta-row span:not(:last-child)::after { content: "·"; margin-left: 18px; color: var(--line); }
+
+  .steps { display: grid; gap: 22px; margin-top: 24px; max-width: 44em; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start; }
+  .step-num {
+    width: 44px; height: 44px;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700; font-size: 1.1rem;
+  }
+  .step h3 { font-size: 1.05rem; font-weight: 700; margin-top: 8px; }
+  .step p { margin: 8px 0 0; color: var(--ink-soft); }
+  .step .ui { color: var(--ink); font-weight: 700; }
+
+  .note {
+    margin-top: 20px;
+    border-left: 3px solid var(--signal);
+    padding: 4px 0 4px 16px;
+    max-width: 42em;
+  }
+  .note .label {
+    margin: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem; letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--signal); font-weight: 700;
+  }
+  .note p + p { margin: 6px 0 0; color: var(--ink-soft); }
+  .note.ok { border-color: var(--ok); }
+  .note.ok .label { color: var(--ok); }
+
+  .qa { margin-top: 22px; display: grid; gap: 14px; max-width: 44em; }
+  .qa .q { font-weight: 700; color: var(--ink); margin: 0; }
+  .qa .a { margin: 4px 0 0; color: var(--ink-soft); }
+
+  footer {
+    margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: .85rem;
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+  }
+  @media (max-width: 560px) {
+    .step { grid-template-columns: 36px 1fr; gap: 12px; }
+    .step-num { width: 36px; height: 36px; font-size: .95rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <p class="eyebrow">IGUP Install Guide</p>
+    <h1>インストールガイド</h1>
+    <p class="tagline">ダウンロードから初回接続までの手順。IGUPはコード署名のないインストーラーで配布しています。OSの警告をひとつずつ解除して進めてください。</p>
+    <div class="meta-row">
+      <span>macOS 11+</span><span>Windows 10 / 11 64bit</span><span>バージョン 0.1.0</span>
+    </div>
+  </header>
+
+  <section id="about">
+    <h2>はじめに:なぜ警告が出るのか</h2>
+    <div class="prose">
+      <p class="lead">IGUP は Apple や Windows の有料開発者証明書を使っていません。そのため初回起動時に「不明な開発元」の警告が表示されます。</p>
+      <p>これは「危険だから止められた」わけではなく、<strong>証明書で署名されていないアプリです、本当に開きますか?</strong> というOSの確認です。手順どおりに進めば起動できます(2回目以降は警告なしで開きます)。</p>
+    </div>
+    <div class="note ok">
+      <p class="label">Safety</p>
+      <p>IGUP はあなたのPCの中だけで動くアプリです。取得したアクセストークンはOSの暗号化領域(macOSはキーチェーン、WindowsはDPAPI)に保存され、設定ファイルの書き出しには含まれません。投稿データもすべてPC内に保存されます。</p>
+    </div>
+  </section>
+
+  <section id="macos">
+    <h2>macOS にインストール</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>DMG を開いてアプリを追加</h3>
+          <p>ダウンロードした <code>IGUP-...-dmg</code> を開き、<span class="ui">IGUP</span> を <span class="ui">Applications</span> フォルダへドラッグします。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>初回は「右クリック → 開く」</h3>
+          <p>Launchpad からではなく、<strong>Finder のアプリケーションで IGUP を右クリックして「開く」</strong>を選びます。確認ダイアログが出たらもう一度「開く」を押します。</p>
+          <p>※ダブルクリックで「開けませんでした」と出た場合は、<span class="ui">システム設定 &gt; プライバシーとセキュリティ</span> を開くと「IGUPは使用がブロックされました」という項目があるので <span class="ui">このまま開く</span> を押します。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>それでも開かないとき(ターミナル)</h3>
+          <p>「壊れているため開けません」と表示される場合は、ターミナルで次のコマンドを実行してください。ダウンロード時の隔離フラグを外します。</p>
+          <pre><code>xattr -dr com.apple.quarantine /Applications/IGUP.app</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="windows">
+    <h2>Windows にインストール</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>セットアップ exe を実行</h3>
+          <p>ダウンロードした <code>IGUP Setup ...exe</code> をダブルクリックします。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>SmartScreen の「詳細情報 → 実行」</h3>
+          <p><span class="ui">WindowsによってPCが保護されました</span> という青い画面が出たら、<strong>「詳細情報」をクリック</strong>すると「実行」ボタンが現れます。押して進みます。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>インストール先を選んで完了</h3>
+          <p>「自分用にインストール」でそのまま進めます。インストール先は変更できます。完了するとスタートメニューに IGUP が追加されます。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="first-run">
+    <h2>初回起動:接続まで</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>ブローカーURLを入力</h3>
+          <p><span class="ui">設定 &gt; ブローカー接続</span> に、購入時に案内されたサーバーURL(<code>https://...</code>)を入力し、「接続テスト」で <span class="ui">接続OK</span> と出ることを確認します。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>Instagram に接続</h3>
+          <p><span class="ui">接続</span> 画面の「Instagramと接続」を押すとブラウザが開くので、自分のInstagramアカウントでログインして認証を許可します。IGUPに自動的に戻ります。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>自動運転をオン</h3>
+          <p>ダッシュボードの <span class="ui">自動運転を有効にする</span> を押せば準備完了。コメントやDMへの自動返信、予約投稿が動き始めます。<strong>PCの電源が入っている間だけ</strong>動作します。</p>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <p class="label">Note</p>
+      <p>Instagram自動化にはビジネス/クリエイターのプロアカウントが必要です。個人アカウントのままの場合は、Instagramの設定で種類を切り替えてから接続してください。</p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2>よくある質問</h2>
+    <div class="qa">
+      <p class="q">Q. アンインストールはどうする?</p>
+      <p class="a">macOS は Applications から IGUP を削除、Windows は「設定 &gt; アプリ」からアンインストール。設定や投稿データも消して完全に削除したい場合は、それぞれ <code>~/Library/Application Support/IGUP</code>(macOS)、<code>%APPDATA%\IGUP</code>(Windows)のフォルダも削除してください。</p>
+      <p class="q">Q. アップデートは?</p>
+      <p class="a">新しいバージョンのインストーラーを同じ手順で実行すると上書きされます。投稿データや設定はそのまま引き継がれます。</p>
+      <p class="q">Q. 企業のPCに入れても大丈夫?</p>
+      <p class="a">ネットワーク的には <code>https://</code> でブローカーと Meta に接続するだけです。ただし社用PCで未署名アプリのインストールが制限されている場合は、管理者に確認してください。</p>
+      <p class="q">Q. PCを閉じていても投稿される?</p>
+      <p class="a">いいえ。IGUPはPC内で動くアプリなので、PCがスリープや電源オフの間は投稿も自動返信も止まります。再起動時に猶予期間内の予約は自動で投稿されます。</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>IGUP 0.1.0</span>
+    <a href="./usage.html">使い方マニュアル</a>
+    <a href="./overview.html">製品概要</a>
+  </footer>
+</div>
+</body>
+</html>

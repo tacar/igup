@@ -1,0 +1,23 @@
+# apps/broker で `docker compose up -d --build` で起動。
+# TLS は前面のリバースプロキシ(Caddy 等)で終端するため、ポートはローカルのみに公開する。
+services:
+  broker:
+    build:
+      context: ..
+      dockerfile: apps/broker/Dockerfile
+    env_file: .env
+    environment:
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - broker-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  broker-data:

@@ -39,6 +39,8 @@ export type ServicesOptions = {
   secrets: ConnectionStorage;
   notify: Notifier;
   appVersion: string;
+  /** Called whenever the effective broker URL changes so the desktop auth flow can follow it. */
+  onBrokerUrlChanged?: (url: string) => void;
 };
 
 /** Everything the UI (IPC) and the local HTTP API can do, in one place. */
@@ -70,6 +72,7 @@ export class Services {
   async start(): Promise<void> {
     await this.data.load();
     this.data.subscribe((event) => this.options.notify(`data:${event.type}`, event.payload));
+    await this.applyBrokerUrl(this.effectiveBrokerUrl());
     this.engine.start();
     this.scheduler.start();
     this.insights.start();
@@ -88,6 +91,28 @@ export class Services {
 
   // ---------------------------------------------------------------- connection
 
+  /** Settings value wins, then the launch-time env value, then the local dev default. */
+  effectiveBrokerUrl(): string {
+    const fromSettings = this.data.get().settings.brokerUrl?.trim() ?? "";
+    return fromSettings || this.options.brokerUrl || "http://127.0.0.1:8787";
+  }
+
+  /** Points every broker consumer (client, engine, auth) at a new URL without a restart. */
+  async applyBrokerUrl(url: string): Promise<void> {
+    const target = normalizeBrokerUrl(url);
+    if (!target || target === this.broker.brokerUrl) return;
+    this.broker.setBaseUrl(target);
+    this.options.onBrokerUrlChanged?.(target);
+    this.capabilitiesCache = { at: 0, value: null };
+    try {
+      await this.engine.detectWebhookMode();
+    } catch (cause) {
+      this.data.log("warn", "system", "ブローカーへの接続確認ができませんでした", messageOf(cause));
+    }
+    this.data.log("info", "system", `ブローカーURLを ${target} に切り替えました`);
+    this.options.notify("connection:changed");
+  }
+
   async connectionStatus() {
     const [instagram, threads, lineToken] = await Promise.all([
       this.options.secrets.load("instagram"),
@@ -99,7 +124,7 @@ export class Services {
       instagram: { connected: Boolean(instagram), expiresAt: instagram?.expiresAt ?? null },
       threads: { connected: Boolean(threads), expiresAt: threads?.expiresAt ?? null },
       line: { configured: Boolean(lineToken) },
-      broker: { url: this.options.brokerUrl, reachable: capabilities !== null, capabilities },
+      broker: { url: this.broker.brokerUrl, reachable: capabilities !== null, capabilities },
       automation: this.engine.status(),
       localApi: { enabled: this.data.get().settings.localApiEnabled, port: this.localApi.port },
     };
@@ -394,6 +419,7 @@ export class Services {
   async saveSettings(patch: Partial<Settings>): Promise<Settings> {
     const before = { ...this.data.get().settings };
     const next: Settings = { ...before, ...patch };
+    if (patch.brokerUrl !== undefined) next.brokerUrl = normalizeBrokerUrl(String(patch.brokerUrl));
     next.pollIntervalSec = clamp(Number(next.pollIntervalSec) || DEFAULT_SETTINGS.pollIntervalSec, 20, 3_600);
     next.brokerEventIntervalSec = clamp(Number(next.brokerEventIntervalSec) || DEFAULT_SETTINGS.brokerEventIntervalSec, 5, 600);
     next.recentMediaCount = clamp(Number(next.recentMediaCount) || DEFAULT_SETTINGS.recentMediaCount, 1, 50);
@@ -411,6 +437,7 @@ export class Services {
     }, "settings:changed");
     if (next.pollIntervalSec !== before.pollIntervalSec || next.brokerEventIntervalSec !== before.brokerEventIntervalSec) this.engine.restart();
     if (next.localApiEnabled !== before.localApiEnabled || next.localApiPort !== before.localApiPort) await this.applyLocalApiSetting();
+    if (next.brokerUrl !== before.brokerUrl) await this.applyBrokerUrl(this.effectiveBrokerUrl());
     return next;
   }
 
@@ -457,7 +484,7 @@ export class Services {
   }
 
   appInfo() {
-    return { version: this.options.appVersion, dataPath: this.data.path, brokerUrl: this.options.brokerUrl, mediaDir: this.mediaDir };
+    return { version: this.options.appVersion, dataPath: this.data.path, brokerUrl: this.broker.brokerUrl, mediaDir: this.mediaDir };
   }
 
   // ---------------------------------------------------------------- local API routes
@@ -499,4 +526,20 @@ export class Services {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+/** Normalizes a user supplied broker URL. Empty means "use the fallback". */
+function normalizeBrokerUrl(input: string): string {
+  const value = input.trim().replace(/\/+$/, "");
+  if (!value) return "";
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error("ブローカーURLの形式を確認してください（例: https://broker.example.com）。");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error("ブローカーURLは http(s):// で始まる必要があります。");
+  const local = parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost" || parsed.hostname === "::1";
+  if (parsed.protocol === "http:" && !local) throw new Error("公開ホストのブローカーURLは https:// で指定してください（http はローカルテスト用です）。");
+  return value;
 }
