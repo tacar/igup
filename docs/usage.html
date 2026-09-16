@@ -390,16 +390,22 @@
   <header class="masthead">
     <p class="eyebrow">Operation Guide</p>
     <h1>IGUP</h1>
-    <p class="tagline">Instagramへの接続と画像投稿を、あなたのPCから。</p>
+    <p class="tagline">9つの画面で、Instagram・Threads・LINE運用を管理する。</p>
     <div class="meta-row">
       <span>Desktop App</span>
       <span class="mono">v0.1.0</span>
-      <span class="mono">3 Steps</span>
+      <span class="mono">9 Screens</span>
     </div>
     <nav class="jumpnav" aria-label="このページの見出し">
-      <a href="#step-01">01 接続</a>
-      <a href="#step-02">02 確認</a>
-      <a href="#step-03">03 投稿</a>
+      <a href="#screen-01">01 ダッシュボード</a>
+      <a href="#screen-02">02 接続</a>
+      <a href="#screen-03">03 投稿</a>
+      <a href="#screen-04">04 カレンダー</a>
+      <a href="#screen-05">05 自動返信ルール</a>
+      <a href="#screen-06">06 分析</a>
+      <a href="#screen-07">07 セミナー</a>
+      <a href="#screen-08">08 ログ</a>
+      <a href="#screen-09">09 設定</a>
       <a href="#trouble">困ったときは</a>
       <a href="#spec">仕様</a>
     </nav>
@@ -407,7 +413,7 @@
 
   <section class="intro">
     <div class="prose">
-      <p>IGUPは、InstagramプロアカウントのOAuth接続・アカウント情報取得・画像のテスト投稿を行う買い切り型のデスクトップツールです。Metaアプリのシークレットは認証サーバー側だけが保持し、あなたのPCへ配布されることはありません。</p>
+      <p>このページはIGUPデスクトップアプリの画面ごとの使い方をまとめた取扱説明書です。左のメニュー、または上のジャンプリンクから、確認したい画面を選んでください。導入手順（Metaアプリの作成・ブローカーの起動など）は<a href="../README.md">README</a>を、AIツールからの操作は<a href="ai-integration.md">docs/ai-integration.md</a>を参照してください。</p>
     </div>
   </section>
 
@@ -415,30 +421,43 @@
     <h2>ご利用前に</h2>
     <ul>
       <li><strong>Instagramプロアカウント</strong>（ビジネスまたはクリエイター）が必要です。個人アカウントの場合は、Instagram側で先に切り替えてください。</li>
-      <li><strong>インターネット接続</strong>が必要です。IGUPはMeta社のInstagram APIと通信します。</li>
-      <li><strong>投稿する画像の公開HTTPS URL</strong>を用意してください。Instagram側から直接取得できる画像URLのみ対応しており、お使いのPC内のファイルを直接アップロードすることはできません（初期版の制限です）。</li>
+      <li><strong>ブローカーの起動。</strong>接続画面を使うには、README の手順でMetaアプリを作成し、ブローカー（<code class="mono">apps/broker</code>）をあらかじめ起動しておく必要があります。</li>
+      <li><strong>（任意）Threads・LINEの設定。</strong>Threads予約投稿にはブローカー側にThreadsアプリの設定が、LINEセミナー連携にはLINE公式アカウントのチャネルアクセストークンが必要です。どちらも未設定のままでも、Instagram機能だけで利用を始められます。</li>
     </ul>
   </section>
 
   <section class="steps">
-    <h2>操作手順</h2>
+    <h2>画面ガイド</h2>
 
-    <div class="step" id="step-01">
+    <div class="step" id="screen-01">
       <div class="step-num mono">01</div>
-      <p class="step-of">Step 1 / 3</p>
-      <h3>Instagram接続</h3>
+      <p class="step-of">Screen 1 / 9</p>
+      <h3>ダッシュボード</h3>
       <div class="step-body">
-        <p>画面上部の <span class="btn-chip">Instagramに接続</span> を押してください。既定のブラウザが開き、Metaのログイン・認可画面が表示されます。内容を確認して許可すると、自動でIGUPの画面に戻ります。</p>
-        <p>接続が完了すると通知欄に「Instagramと接続しました。」と表示され、トークンの有効期限も画面に表示されます。接続済みの状態では、ボタンの表示は <span class="btn-chip">再接続する</span> に変わります。</p>
+        <p>「いまの状態と、これから起きることをひと目で。」がこの画面の役割です。Instagram・Threads・LINE・ブローカーの接続状態、直近の予約投稿、最近の自動返信・投稿の動きをまとめて確認できます。</p>
+        <p><span class="btn-chip">いま確認する</span> を押すと、次のポーリング（定期確認）を待たずにコメント・DMの確認と予約投稿の実行をその場で1回実行します。実行すると「確認を実行しました。」と表示されます。</p>
+        <div class="callout">
+          <p class="label">ポーリングとWebhook</p>
+          <p>Webhookを登録していない場合、コメント・DMの検知は設定した間隔（既定は「設定」画面のポーリング間隔）ごとの定期確認になります。ダッシュボードのボタンは、この間隔を待たずにすぐ確認したいときに使います。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" id="screen-02">
+      <div class="step-num mono">02</div>
+      <p class="step-of">Screen 2 / 9</p>
+      <h3>接続</h3>
+      <div class="step-body">
+        <p>Instagram・Threads・LINE・ブローカーの4枚のカードで接続状況を管理します。秘密情報はこのPCの安全な保管領域にだけ保存されます。</p>
 
         <div class="badge-legend">
           <div class="item">
-            <span class="badge-chip is-checking">確認中</span>
-            <span class="cap">起動直後</span>
+            <span class="badge-chip is-checking">稼働中</span>
+            <span class="cap">ブローカーに到達できている</span>
           </div>
           <div class="item">
-            <span class="badge-chip is-off">未接続</span>
-            <span class="cap">接続が必要</span>
+            <span class="badge-chip is-off">未接続 / 接続不可</span>
+            <span class="cap">接続または設定が必要</span>
           </div>
           <div class="item">
             <span class="badge-chip is-on">接続済み</span>
@@ -446,53 +465,155 @@
           </div>
         </div>
 
+        <p><strong>Instagram：</strong><span class="btn-chip">Instagramに接続</span>を押すと既定のブラウザでMetaの認可画面が開き、「ブラウザでInstagram認証を続けてください。」と表示されます。許可するとIGUPに戻り、以後はボタンが<span class="btn-chip">再接続する</span>に変わります。</p>
+        <p><strong>Threads：</strong>ブローカーにThreadsアプリの設定（<code class="mono">THREADS_APP_ID</code> など）がある場合のみ、Instagramとは別に接続できます。未設定の場合はボタンが無効になり、「ブローカーにThreadsアプリの設定（THREADS_APP_ID など）がないため利用できません。」と表示されます。</p>
+        <p><strong>LINE：</strong>LINE公式アカウントのチャネルアクセストークンを貼り付けて保存します。空欄のまま保存するとLINE設定を削除できます。</p>
+        <p><strong>ブローカー：</strong>稼働中／接続不可のバッジと、Webhook・画像の一時公開・計測リンク・セミナー申込・Threads認証など、いま使える機能のバッジが並びます。接続できない場合は次のように表示されます。</p>
+
+        <div class="trouble-row">
+          <p class="msg">ブローカーに接続できません。</p>
+          <p class="fix">README の手順で META_APP_ID / META_APP_SECRET / META_REDIRECT_URI を設定して <code class="mono">npm run dev:broker</code> を起動するか、<code class="mono">IGUP_BROKER_URL</code> に公開URLを設定してください。</p>
+        </div>
+
         <div class="callout">
           <p class="label">セキュリティについて</p>
-          <p>アクセストークンはOS標準の暗号化機能を使い、このPC内だけに保存されます。認証サーバーは認証結果を最大5分だけ一時的に保持し、一度使うと無効になります。</p>
+          <p>アクセストークンとLINEチャネルトークンは、いずれもOS標準の暗号化機能でこのPC内だけに保存されます。ブローカーはApp Secretを持ちますが、あなたのアクセストークンを保存することはありません。</p>
         </div>
       </div>
     </div>
 
-    <div class="step" id="step-02">
-      <div class="step-num mono">02</div>
-      <p class="step-of">Step 2 / 3</p>
-      <h3>アカウント確認</h3>
-      <div class="step-body">
-        <p><span class="btn-chip">アカウント情報を取得</span> を押すと、接続したプロアカウントのユーザー名・アカウント種別・投稿数が表示されます。</p>
-        <div class="example-block">
-          <p class="tag">表示例</p>
-          <dl>
-            <dt>ユーザー名</dt><dd>@example_account</dd>
-            <dt>アカウント種別</dt><dd>ビジネス</dd>
-            <dt>投稿数</dt><dd class="mono">128</dd>
-          </dl>
-        </div>
-        <p>手順1が未完了のまま実行すると「先にInstagramへ接続してください。」と表示されます。先に接続を済ませてください。</p>
-      </div>
-    </div>
-
-    <div class="step" id="step-03">
+    <div class="step" id="screen-03">
       <div class="step-num mono">03</div>
-      <p class="step-of">Step 3 / 3</p>
-      <h3>画像をテスト投稿</h3>
+      <p class="step-of">Screen 3 / 9</p>
+      <h3>予約投稿</h3>
       <div class="step-body">
-        <p>「公開画像URL」と「キャプション」を入力し、<span class="btn-chip">投稿する</span> を押してください。</p>
+        <p>フィード・カルーセル・リール・ストーリーズ・Threadsを予約して自動投稿します。<span class="btn-chip">＋ 投稿を予約</span> から新規作成します。</p>
+        <p>投稿種別を選ぶと、必要な画像・動画の枚数が変わります。画像はドラッグ＆ドロップで取り込み、投稿種別ごとの比率（1:1 / 4:5 / 1.91:1 / 9:16 / 自由）でその場で切り抜けます。PNGは自動でJPEGに変換されます。リールには表紙画像を別途設定できます。</p>
 
         <div class="field-mock">
           <p class="tag">画面イメージ</p>
           <div>
-            <span class="f-label">公開画像URL</span>
-            <div class="f-input">https://example.com/image.jpg</div>
+            <span class="f-label">投稿種別</span>
+            <div class="f-input">フィード画像 / カルーセル / リール / ストーリーズ / Threads</div>
           </div>
           <div>
             <span class="f-label">キャプション</span>
             <div class="f-textarea"></div>
             <div class="f-count">0 / 2,200</div>
           </div>
+          <div>
+            <span class="f-label">投稿日時</span>
+            <div class="f-input">2025-10-01 09:00</div>
+          </div>
         </div>
 
-        <p>画像URLはInstagram側から直接取得できる公開HTTPSのものを指定します。キャプションは最大2,200文字まで、入力中は文字数がリアルタイムで表示されます。</p>
-        <p>投稿が成功すると、通知欄に「投稿しました（メディアID: …）」と表示されます。</p>
+        <p>予約後、そのメディアに自動返信ルールを1つ紐づけられます。紐づけると、投稿へのコメントにそのルールが自動で反応するようになります。カルーセルは2〜10枚、Threadsのカルーセルは最大20枚、Threadsはツリー状に複数投稿を連結できます。</p>
+        <p>投稿を削除するときは確認ダイアログが出ます（「この投稿を削除しますか？」）。入力に問題があると、たとえば次のように表示されます。</p>
+        <ul>
+          <li class="mono">投稿日時を指定してください。</li>
+          <li class="mono">フィード画像投稿は画像1枚を選んでください。</li>
+          <li class="mono">カルーセルは2〜10枚の画像・動画を選んでください。</li>
+          <li class="mono">リールは動画1本を選んでください。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step" id="screen-04">
+      <div class="step-num mono">04</div>
+      <p class="step-of">Screen 4 / 9</p>
+      <h3>カレンダー</h3>
+      <div class="step-body">
+        <p>予約投稿とメモを月ごとに確認します。日付をクリックすると詳細と追加ができます。</p>
+        <p>投稿は種別ごとに色分けされたチップで表示されます（画像・カルーセル・リール・ストーリーズ・Threadsでそれぞれ異なる色）。公開済みの投稿は薄く表示され、失敗・実行漏れの投稿には取り消し線が付きます。</p>
+        <p>メモは7色から選んで色分けでき、投稿とは別に左端の色帯付きチップとして表示されます。前月・今日・次月ボタンで月を移動できます。</p>
+      </div>
+    </div>
+
+    <div class="step" id="screen-05">
+      <div class="step-num mono">05</div>
+      <p class="step-of">Screen 5 / 9</p>
+      <h3>自動返信ルール</h3>
+      <div class="step-body">
+        <p>コメント・DM・ストーリーズ返信・ライブのキーワードに、公開返信とリンク付きDMを自動で返します。<span class="btn-chip">＋ ルールを作成</span> から新規作成します。</p>
+        <p>反応する入口（コメント／DM／ストーリーズ返信／ライブ配信コメント）とキーワード、一致方法（部分一致／完全一致）を設定します。コメント・ライブ配信は特定の投稿だけに絞ることもできます。</p>
+        <p>公開返信は最大3パターンまで登録でき、そのうち1つがランダムに選ばれて返信されます。DM本文（最大1,000文字）には、リンク付きボタン（最大3つ）やクイックリプライ（最大13個）を添付できます。ボタン・クイックリプライをタップさせて、別のルールのDMに続けて送る「メッセージ連鎖」も設定できます。</p>
+        <p>最初のDMのあとに、1分〜23時間の間隔で追加のメッセージを送る「時間差送信」も設定できます（Instagramの24時間ルールにより23時間が上限です）。同じ相手への再送を抑える「クールダウン」時間も設定できます。</p>
+
+        <div class="callout">
+          <p class="label">入力チェックの例</p>
+          <ul>
+            <li class="mono">ルール名を入力してください。</li>
+            <li class="mono">反応する入口（コメント / DM / ストーリーズ返信 / ライブ）を1つ以上選んでください。</li>
+            <li class="mono">キーワードを1つ以上入力してください。</li>
+            <li class="mono">公開返信は3パターンまでです。／ボタンは3つまでです。／クイックリプライは13個までです。</li>
+            <li class="mono">DM本文は1,000文字以内にしてください。</li>
+            <li class="mono">時間差送信は23時間以内に設定してください（Instagramの24時間ルール）。</li>
+          </ul>
+        </div>
+        <p>ルールを削除するときは「ルール『（ルール名）』を削除しますか？」という確認ダイアログが出ます。</p>
+      </div>
+    </div>
+
+    <div class="step" id="screen-06">
+      <div class="step-num mono">06</div>
+      <p class="step-of">Screen 6 / 9</p>
+      <h3>分析</h3>
+      <div class="step-body">
+        <p>投稿インサイト・計測リンク・タップ分析をまとめて確認します。数字はこのPCに保存され、ストーリーズが消えたあとも残ります。</p>
+        <p><strong>投稿インサイト：</strong>反応の良かった投稿をTop10で表示し、フォロワー数・リーチの推移を折れ線グラフで確認できます。ストーリーズは公開から24時間で消えますが、消える前に取得した数値をスナップショットとして保存します。</p>
+        <p><strong>タップ分析：</strong>DMのボタン・クイックリプライごとに、届いた数・見られた数・押された数を記録します。</p>
+        <p><strong>計測リンク：</strong>短縮リンクを発行し、投稿・プロフィールなど貼った場所ごとにクリック数を記録します。日別の推移やランキングで確認できます。作成すると「作成しました: （リンクURL）」と表示されます。プレビュー用のクローラーアクセスは集計に含みません。</p>
+        <p>計測リンクを削除するときは「この計測リンクを削除しますか？貼った先からはアクセスできなくなります。」という確認が出ます。削除すると、そのリンクを踏んでも先のURLに転送されなくなる点に注意してください。</p>
+      </div>
+    </div>
+
+    <div class="step" id="screen-07">
+      <div class="step-num mono">07</div>
+      <p class="step-of">Screen 7 / 9</p>
+      <h3>セミナー</h3>
+      <div class="step-body">
+        <p>申込ページを公開し、申込があったらLINEでお礼を送り、開始前にリマインドします。</p>
+        <p>タイトル・説明・日程（開催日時と定員、最大30件）・お礼メッセージ・リマインド（何時間前に送るか、複数設定可）を設定します。お礼・リマインドの本文には <code class="mono">{name} {title} {date}</code> と書くと、申込者の名前・セミナー名・日時に自動で置き換わります。</p>
+        <p>LIFF ID（LINE Developersで作成）を設定すると、申込ページがLINE内で開き、申込者のLINEに自動でお礼・リマインドを送れます。空欄の場合はメールでの申込のみになります。</p>
+        <p>保存すると申込ページの公開URLが発行され、コピー・ブラウザで開く・QRコード表示ができます。申込一覧では、日程・名前・メール・LINE・申込日時・お礼とリマインドの送信状況を確認できます。</p>
+
+        <div class="trouble-row">
+          <p class="msg">LINE公式アカウントが未設定です。</p>
+          <p class="fix">接続画面でチャネルアクセストークンを設定すると、お礼・リマインドを自動送信できます。</p>
+        </div>
+        <div class="trouble-row">
+          <p class="msg">ブローカーに公開URL（PUBLIC_BASE_URL）が設定されていないため、申込ページを公開できません。</p>
+          <p class="fix">ブローカーの環境変数 <code class="mono">PUBLIC_BASE_URL</code> に、ブローカーの公開HTTPSアドレスを設定してください（未設定でも到達可能なら自動判定されます）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" id="screen-08">
+      <div class="step-num mono">08</div>
+      <p class="step-of">Screen 8 / 9</p>
+      <h3>送受信ログ</h3>
+      <div class="step-body">
+        <p>受信したコメント・DM、送った返信、投稿、分析の記録です（最新300件）。カテゴリタブ（すべて／受信／送信／投稿／分析／セミナー／リンク／システム）で絞り込めます。</p>
+        <p>各行には時刻・カテゴリ・タイトル・詳細が表示されます。「すべて削除」で確認ダイアログのうえログを一括消去できます。</p>
+      </div>
+    </div>
+
+    <div class="step" id="screen-09">
+      <div class="step-num mono">09</div>
+      <p class="step-of">Screen 9 / 9</p>
+      <h3>設定</h3>
+      <div class="step-body">
+        <p>動作の細かい調整を行います。変更は <span class="btn-chip">すべて保存</span> で反映されます。</p>
+        <p>テーマ（ライト／ダーク／OSに合わせる）とアクセントカラー（8色のスウォッチまたはカスタム指定）、ポーリング間隔・ブローカーからのイベント確認間隔・直近メディア件数・実行漏れとみなす猶予時間・ストーリーズのスナップショット間隔などの自動化タイミング、ライブ配信コメント対応や分析取得のON/OFF、既定のキャプションを設定できます。</p>
+
+        <div class="callout">
+          <p class="label">ローカルAPI（AI・外部ツール連携）</p>
+          <p>「ローカルAPIを有効にする」をONにすると、Claude CodeなどのAIツールから画面を使わずに投稿予約・ルール作成・分析取得ができるようになります。このPCの中だけ（127.0.0.1）で使えるHTTP APIで、トークンを知っているプロセスだけがアクセスできます。トークンは「表示」「コピー」で確認でき、「再生成」すると古いトークンは使えなくなります。使い方は<a href="ai-integration.md">docs/ai-integration.md</a>を参照してください。</p>
+          <p class="mono">curl -H "Authorization: Bearer &lt;トークン&gt;" http://127.0.0.1:42814/status</p>
+        </div>
+
+        <p><strong>バックアップ：</strong>ルール・投稿・メモなどの設定データを、秘密情報を含まない形でエクスポート・インポートできます。読み込み時は「現在のデータをバックアップの内容で置き換えます。よろしいですか？」と確認されます。</p>
+        <p><strong>プライバシー・アプリ情報：</strong>Metaアプリ審査で求められるプライバシーポリシーに記載する問い合わせ先を設定できるほか、バージョン・データ保存先・メディア保存先・ブローカーURLを確認できます。</p>
       </div>
     </div>
   </section>
@@ -501,50 +622,50 @@
     <h2>困ったときは</h2>
 
     <div class="trouble-row">
-      <p class="msg">先にInstagramへ接続してください。</p>
-      <p class="fix">手順1（Instagram接続）が完了していません。画面上部から接続を行ってください。</p>
+      <p class="msg">ブローカーに接続できません。</p>
+      <p class="fix">README の手順で META_APP_ID / META_APP_SECRET / META_REDIRECT_URI を設定して <code class="mono">npm run dev:broker</code> を起動するか、<code class="mono">IGUP_BROKER_URL</code> に公開URLを設定してください。</p>
     </div>
     <div class="trouble-row">
-      <p class="msg">認証処理はすでに進行中です。</p>
-      <p class="fix"><span class="btn-chip">Instagramに接続</span> を連続で押すと表示されます。開いたブラウザでの認証を先に完了するか、ブラウザのタブを閉じてからやり直してください。</p>
+      <p class="msg">ブローカーにThreadsアプリの設定（THREADS_APP_ID など）がないため利用できません。</p>
+      <p class="fix">Threads予約投稿を使う場合は、ブローカーの環境変数に <code class="mono">THREADS_APP_ID</code> / <code class="mono">THREADS_APP_SECRET</code> を設定してください（任意機能です）。</p>
     </div>
     <div class="trouble-row">
-      <p class="msg">認証状態が一致しません。／認証結果が無効か、すでに使用されています。</p>
-      <p class="fix">認証のやり直しが必要です。一度使った認証結果は再利用できないため、IGUPで改めて <span class="btn-chip">Instagramに接続</span> を押してください。</p>
+      <p class="msg">Webhookが届かず、コメント・DMの反応が遅い。</p>
+      <p class="fix">Metaアプリのダッシュボードで Instagram &gt; Webhooks にブローカーの <code class="mono">/webhooks/instagram</code> を登録し、検証トークン（<code class="mono">META_WEBHOOK_VERIFY_TOKEN</code>）を一致させてください。未登録でも「設定」画面のポーリング間隔ごとに定期確認されます。</p>
     </div>
     <div class="trouble-row">
-      <p class="msg">認証情報が無効か期限切れです。（ブラウザ側に表示）</p>
-      <p class="fix">認証の開始から時間が空きすぎた場合に表示されます。IGUPから改めて接続をやり直してください。</p>
+      <p class="msg">投稿・ルールの保存時に入力チェックのメッセージが出る。</p>
+      <p class="fix">キャプションの文字数超過、画像・動画の枚数不一致、日時未指定など、投稿種別やDM内容ごとの条件を満たしていない可能性があります。メッセージに従って入力内容を修正してください。</p>
     </div>
     <div class="trouble-row">
-      <p class="msg">この端末では安全な認証情報保存を利用できません。</p>
-      <p class="fix">お使いのPCでOS標準の暗号化機能が利用できない状態です。OSのセキュリティ設定をご確認ください。</p>
+      <p class="msg">LINEのお礼・リマインドが届かない。</p>
+      <p class="fix">「接続」画面でLINEチャネルアクセストークンが設定されているか、セミナーのLIFF IDが正しいか、申込者がLINEで申し込んでいるか（メール申込にはLINE送信できません）を確認してください。</p>
     </div>
     <div class="trouble-row">
-      <p class="msg">投稿内容が不正です。</p>
-      <p class="fix">画像URLまたはキャプションが未入力か、形式が正しくない可能性があります。入力内容をご確認ください。</p>
-    </div>
-    <div class="trouble-row">
-      <p class="msg">投稿時にエラーになる</p>
-      <p class="fix">指定した画像URLがHTTPSで公開アクセス可能か、Instagram側から取得できる状態かをご確認ください。</p>
+      <p class="msg">ローカルAPIにアクセスできない／401が返る。</p>
+      <p class="fix">「設定」画面でローカルAPIが有効になっているか、リクエストの<code class="mono">Authorization</code>ヘッダーのトークンが画面に表示されているものと一致しているかを確認してください。トークンを再生成した場合は、呼び出し側の設定も更新してください。</p>
     </div>
   </section>
 
   <section class="spec" id="spec">
     <h2>仕様</h2>
     <div class="spec-table">
-      <div class="spec-row"><span class="k">必要なアカウント</span><span class="v">Instagramプロアカウント（ビジネス / クリエイター）</span></div>
-      <div class="spec-row"><span class="k">権限（スコープ）</span><span class="v">instagram_business_basic, instagram_business_content_publish</span></div>
+      <div class="spec-row"><span class="k">必要なアカウント</span><span class="v">Instagramプロアカウント（ビジネス / クリエイター）。Threads・LINEは任意</span></div>
+      <div class="spec-row"><span class="k">権限（スコープ）</span><span class="v">instagram_business_basic, instagram_business_content_publish, instagram_business_manage_messages, instagram_business_manage_comments, instagram_business_manage_insights</span></div>
+      <div class="spec-row"><span class="k">Threadsスコープ</span><span class="v">threads_basic, threads_content_publish（任意）</span></div>
       <div class="spec-row"><span class="k">Graph APIバージョン</span><span class="v">v23.0</span></div>
-      <div class="spec-row"><span class="k">トークンの保存</span><span class="v">OS標準の暗号化機能でPC内にのみ保存</span></div>
-      <div class="spec-row"><span class="k">認証結果の保持</span><span class="v">認証サーバー側で最大5分・一度だけ交換可能</span></div>
-      <div class="spec-row"><span class="k">キャプション上限</span><span class="v">2,200文字</span></div>
-      <div class="spec-row"><span class="k">画像投稿の形式</span><span class="v">公開HTTPS画像URLのみ（ローカルアップロード不可）</span></div>
+      <div class="spec-row"><span class="k">トークンの保存</span><span class="v">OS標準の暗号化機能でPC内にのみ保存（ブローカーは保存しない）</span></div>
+      <div class="spec-row"><span class="k">キャプション上限</span><span class="v">2,200文字（Threadsは本文500文字・画像最大20枚）</span></div>
+      <div class="spec-row"><span class="k">カルーセル枚数</span><span class="v">2〜10枚（Threadsカルーセルは最大20枚）</span></div>
+      <div class="spec-row"><span class="k">DM本文・ボタン</span><span class="v">本文1,000文字以内・ボタン最大3・クイックリプライ最大13</span></div>
+      <div class="spec-row"><span class="k">時間差送信</span><span class="v">1分〜23時間後（Instagramの24時間ルール）</span></div>
+      <div class="spec-row"><span class="k">画像・動画の一時公開</span><span class="v">ブローカー上に既定24時間（MEDIA_TTL_HOURS）。動画は経由しない</span></div>
+      <div class="spec-row"><span class="k">ローカルAPI</span><span class="v">127.0.0.1限定・既定ポート42814・Bearerトークン認証（既定は無効）</span></div>
     </div>
   </section>
 
   <footer class="note">
-    本書はIGUP初期版（v0.1.0）の操作ガイドです。画面表示や仕様は今後のアップデートで変更される場合があります。
+    本書はIGUP（v0.1.0）の操作ガイドです。画面表示や仕様は今後のアップデートで変更される場合があります。導入手順は<a href="../README.md">README</a>、製品概要は<a href="overview.html">overview.html</a>を参照してください。
   </footer>
 
 </div>
