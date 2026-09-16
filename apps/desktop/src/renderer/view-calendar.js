@@ -38,7 +38,7 @@
         posts.length === 0 ? h("p", { class: "muted small" }, "この日の投稿はありません。") :
           h("div", { class: "list" }, posts.map((post) => h("div", { class: "item", style: { padding: "8px 10px" } },
             h("span", { class: "chip", style: { background: POST_KIND[post.kind].color } }, POST_KIND[post.kind].label),
-            h("div", { class: "body" }, h("div", { class: "title" }, snippet(post)), h("div", { class: "meta" }, fmt.time(post.scheduledAt))),
+            h("div", { class: "body" }, h("div", { class: "title" }, snippet(post)), h("div", { class: "meta" }, fmt.time(post.scheduledAt), post.recurrence ? ` · 🔁 ${IGUP.recurrenceLabel(post.recurrence)}` : "")),
             badge(POST_STATUS[post.status].label, POST_STATUS[post.status].cls),
             post.status !== "publishing" ? h("button", { class: "ghost small", type: "button", onClick: () => { dialog.close(); IGUP.posts.openEditor(post); } }, "編集") : null,
           ))),
@@ -90,7 +90,7 @@
         const entry = byDay.get(key) ?? { posts: [], memos: [] };
         cells.push(h("div", { class: `day${day.getMonth() !== month ? " other" : ""}${key === todayKey ? " today" : ""}`, onClick: () => openDay(key, entry.posts, entry.memos) },
           h("span", { class: "n" }, String(day.getDate())),
-          entry.posts.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt)).map((post) => h("span", { class: "chip", title: `${fmt.time(post.scheduledAt)} ${snippet(post)}`, style: { background: POST_KIND[post.kind].color, opacity: post.status === "published" ? ".6" : "1", textDecoration: post.status === "failed" || post.status === "missed" ? "line-through" : "none" } }, `${fmt.time(post.scheduledAt)} ${snippet(post)}`)),
+          entry.posts.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt)).map((post) => h("span", { class: "chip", title: `${fmt.time(post.scheduledAt)} ${snippet(post)}${post.recurrence ? ` · ${IGUP.recurrenceLabel(post.recurrence)}` : ""}`, style: { background: POST_KIND[post.kind].color, opacity: post.status === "published" ? ".6" : "1", textDecoration: post.status === "failed" || post.status === "missed" ? "line-through" : "none" } }, `${post.recurrence ? "🔁" : ""}${fmt.time(post.scheduledAt)} ${snippet(post)}`)),
           entry.memos.map((memo) => h("span", { class: "chip memo", title: memo.note || memo.title, style: { borderLeftColor: memo.color } }, memo.title)),
         ));
       }

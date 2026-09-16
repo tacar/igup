@@ -98,6 +98,16 @@ export type PostStatus = "scheduled" | "publishing" | "published" | "failed" | "
 
 export type ThreadsItem = { text: string; media: MediaAsset[] };
 
+/** Repeat schedule for a post. time is local "HH:MM"; endAt is an inclusive "YYYY-MM-DD". */
+export type Recurrence = {
+  freq: "daily" | "weekly" | "monthly";
+  interval: number;
+  weekdays?: number[] | undefined; // 0=日 … 6=土 (weekly only)
+  monthDay?: number | undefined; // 1-31, clamped to the month length (monthly only)
+  time: string;
+  endAt: string | null;
+};
+
 export type ScheduledPost = {
   id: string;
   accountId: string;
@@ -110,6 +120,9 @@ export type ScheduledPost = {
   shareToFeed: boolean;
   threads: ThreadsItem[];
   attachRuleId: string | null;
+  /** Present on the 2nd and later instances of a repeat series; the root keeps its own id. */
+  recurrence: Recurrence | null;
+  seriesId: string | null;
   publishedId: string | null;
   permalink: string | null;
   publishedAt: string | null;

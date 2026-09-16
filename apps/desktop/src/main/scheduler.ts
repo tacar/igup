@@ -3,7 +3,7 @@ import type { DataStore } from "./data-store.js";
 import { messageOf } from "./engine.js";
 import { nowIso } from "./ids.js";
 import type { InstagramClient } from "./instagram-client.js";
-import { contentTypeFor, isMissed, isDue, validatePost } from "./posts.js";
+import { contentTypeFor, isMissed, isDue, materializeNext, recurrenceLabel, validatePost } from "./posts.js";
 import type { ConnectionStorage } from "./storage.js";
 import type { ThreadsClient } from "./threads-client.js";
 import type { Connection, MediaAsset, ScheduledPost, ThreadsItem } from "./types.js";
@@ -71,6 +71,7 @@ export class Scheduler {
           post.updatedAt = nowIso();
         }, "posts:changed");
         this.deps.data.log("warn", "post", `予約投稿を見送りました（${post.caption.slice(0, 20) || post.kind}）`, "予定時刻からの猶予時間を超えていました。「今すぐ投稿」で手動投稿できます。");
+        this.materializeSeries(post, post.scheduledAt);
         continue;
       }
       await this.publish(post.id);
@@ -110,6 +111,7 @@ export class Scheduler {
         }
       }, "posts:changed");
       this.deps.data.log("info", "post", `投稿しました（${labelOf(post)}）`, result.permalink ?? result.id);
+      this.materializeSeries(post, post.publishedAt ?? nowIso());
     } catch (cause) {
       this.fail(post, messageOf(cause));
     } finally {
@@ -128,6 +130,29 @@ export class Scheduler {
       post.updatedAt = nowIso();
     }, "posts:changed");
     this.deps.data.log("error", "post", `投稿に失敗しました（${labelOf(post)}）`, error);
+    this.materializeSeries(post, nowIso());
+  }
+
+  /**
+   * Schedules the next instance of a repeat series after one finishes (published,
+   * failed or missed — a single failure must not kill the series). Skipped when a
+   * future instance already exists, e.g. after a failure followed by a manual retry.
+   */
+  private materializeSeries(post: ScheduledPost, fromIso: string): void {
+    if (!post.recurrence) return;
+    const seriesId = post.seriesId ?? post.id;
+    const hasFuture = this.deps.data.get().posts.some((candidate) => candidate.id !== post.id && (candidate.seriesId ?? candidate.id) === seriesId && (candidate.status === "scheduled" || candidate.status === "publishing"));
+    if (hasFuture) return;
+    const next = materializeNext(post, fromIso);
+    if (!next) {
+      this.deps.data.log("info", "post", `繰り返しの期間が終了しました（${recurrenceLabel(post.recurrence)}）`);
+      return;
+    }
+    this.deps.data.update((data) => {
+      data.posts.push(next);
+      data.posts.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
+    }, "posts:changed");
+    this.deps.data.log("info", "post", `次回分を予約しました（${labelOf(post)}）`, `${recurrenceLabel(post.recurrence)} の次は ${next.scheduledAt}`);
   }
 
   private setProgress(postId: string, text: string): void {

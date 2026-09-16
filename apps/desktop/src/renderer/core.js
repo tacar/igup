@@ -147,6 +147,23 @@ window.IGUP = (() => {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
+  const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
+
+  /** Human summary like「毎週(月,木) 20:00」/「毎月15日 10:00」. */
+  function recurrenceLabel(rec) {
+    if (!rec) return "";
+    let head;
+    if (rec.freq === "daily") head = rec.interval === 1 ? "毎日" : `${rec.interval}日ごと`;
+    else if (rec.freq === "weekly") {
+      const days = rec.weekdays?.length ? rec.weekdays.map((day) => WEEKDAY_NAMES[day] ?? "?").join(",") : null;
+      head = rec.interval === 1 ? (days ? `毎週(${days})` : "毎週") : `${rec.interval}週ごと${days ? `(${days})` : ""}`;
+    } else {
+      const day = rec.monthDay !== undefined && rec.monthDay !== null ? `${rec.monthDay}日` : null;
+      head = rec.interval === 1 ? (day ? `毎月${day}` : "毎月") : `${rec.interval}ヶ月ごと${day ? `(${day})` : ""}`;
+    }
+    return `${head} ${rec.time}${rec.endAt ? `（${String(rec.endAt).replaceAll("-", "/")}まで）` : ""}`;
+  }
+
   const POST_KIND = {
     image: { label: "フィード画像", color: "#2563eb" },
     carousel: { label: "カルーセル", color: "#0891b2" },
@@ -313,5 +330,5 @@ window.IGUP = (() => {
     });
   }
 
-  return { views, state, api, h, append, clear, replace, toast, fail, guard, errorMessage, openModal, confirmDialog, fmt, toLocalInput, fromLocalInput, dateKey, POST_KIND, POST_STATUS, SOURCE_LABELS, pageHead, field, switchControl, badge, copyText, openExternal, drawLineChart, drawBars, accounts, activeAccountId, accountName, accountChips, accountSelect };
+  return { views, state, api, h, append, clear, replace, toast, fail, guard, errorMessage, openModal, confirmDialog, fmt, toLocalInput, fromLocalInput, dateKey, WEEKDAY_NAMES, recurrenceLabel, POST_KIND, POST_STATUS, SOURCE_LABELS, pageHead, field, switchControl, badge, copyText, openExternal, drawLineChart, drawBars, accounts, activeAccountId, accountName, accountChips, accountSelect };
 })();

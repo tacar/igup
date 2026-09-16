@@ -19,6 +19,8 @@ function post(overrides: Partial<ScheduledPost> = {}): ScheduledPost {
     shareToFeed: true,
     threads: [],
     attachRuleId: null,
+    recurrence: null,
+    seriesId: null,
     publishedId: null,
     permalink: null,
     publishedAt: null,

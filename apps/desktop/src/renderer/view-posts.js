@@ -1,6 +1,6 @@
 /* Scheduled posts: list + editor (feed image / carousel / reel / story / Threads). */
 (() => {
-  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, fail, toLocalInput, fromLocalInput, POST_KIND, POST_STATUS, openExternal, accountChips, accountSelect, accountName, accounts } = IGUP;
+  const { api, h, replace, fmt, pageHead, badge, guard, field, confirmDialog, openModal, toast, fail, toLocalInput, fromLocalInput, POST_KIND, POST_STATUS, openExternal, accountChips, accountSelect, accountName, accounts, WEEKDAY_NAMES, recurrenceLabel } = IGUP;
   const previewCache = new Map();
   const FILTERS = [
     { key: "active", label: "予約中・投稿中", test: (post) => post.status === "scheduled" || post.status === "publishing" },
@@ -100,10 +100,64 @@
 
   async function openEditor(existing, { publishNow = false, defaults = {} } = {}) {
     const [rules, settings] = await Promise.all([api("rules:list"), api("settings:get")]);
-    const post = existing ? structuredClone(existing) : { kind: "image", scheduledAt: null, caption: "", media: [], cover: null, shareToFeed: true, threads: [{ text: "", media: [] }], attachRuleId: null, accountId: IGUP.activeAccountId() ?? undefined, ...defaults };
+    const post = existing ? structuredClone(existing) : { kind: "image", scheduledAt: null, caption: "", media: [], cover: null, shareToFeed: true, threads: [{ text: "", media: [] }], attachRuleId: null, recurrence: null, accountId: IGUP.activeAccountId() ?? undefined, ...defaults };
     if (post.threads.length === 0) post.threads.push({ text: "", media: [] });
     const kindSelect = h("select", { value: post.kind }, Object.entries(POST_KIND).map(([key, meta]) => h("option", { value: key }, meta.label)));
     const accountSel = accounts().length > 1 && !post.id ? accountSelect(post.accountId, (value) => { post.accountId = value; }) : null;
+
+    // ---- repeat schedule (next instances are materialized automatically after publishing) ----
+    const baseDate = post.scheduledAt ? new Date(post.scheduledAt) : new Date(Date.now() + 3_600_000);
+    let rec = post.recurrence
+      ? { ...post.recurrence, weekdays: post.recurrence.weekdays ? [...post.recurrence.weekdays] : [] }
+      : null;
+    const recToggle = h("input", { type: "checkbox", checked: Boolean(rec) });
+    const recBox = h("div", { class: "stack", style: { marginTop: "8px" } });
+    const recSummary = h("span", { class: "hint" });
+
+    function renderRec() {
+      if (!rec) { replace(recBox); recSummary.textContent = ""; return; }
+      const freq = h("select", { onChange: (event) => { rec.freq = event.target.value; renderRec(); } },
+        h("option", { value: "daily" }, "毎日"), h("option", { value: "weekly" }, "毎週"), h("option", { value: "monthly" }, "毎月"));
+      freq.value = rec.freq;
+      const unit = rec.freq === "daily" ? "日" : rec.freq === "weekly" ? "週" : "ヶ月";
+      const interval = h("input", { type: "number", min: 1, max: 365, value: String(rec.interval), style: { width: "80px" }, onInput: (event) => { rec.interval = Math.max(1, Math.round(Number(event.target.value) || 1)); } });
+      const time = h("input", { type: "time", value: rec.time, onInput: (event) => { rec.time = event.target.value || rec.time; updateSummary(); } });
+      const endAt = h("input", { type: "date", value: rec.endAt ?? "", onInput: (event) => { rec.endAt = event.target.value || null; updateSummary(); } });
+      const parts = [
+        h("div", { class: "field-row" }, field("繰り返し", freq), field(`間隔（${unit}ごと）`, interval), field("時刻", time), field("終了日（任意）", endAt)),
+      ];
+      if (rec.freq === "weekly") {
+        const dayButtons = WEEKDAY_NAMES.map((name, index) => {
+          const on = rec.weekdays.includes(index);
+          return h("button", { type: "button", class: `filter-chip${on ? " active" : ""}`, onClick: (event) => {
+            if (rec.weekdays.includes(index)) rec.weekdays = rec.weekdays.filter((day) => day !== index);
+            else rec.weekdays = [...rec.weekdays, index].sort((a, b) => a - b);
+            event.currentTarget.classList.toggle("active");
+            updateSummary();
+          } }, name);
+        });
+        parts.push(h("div", {}, h("label", {}, "曜日（選ばない場合は最初の投稿と同じ曜日）"), h("div", { class: "row wrap", style: { gap: "6px" } }, dayButtons)));
+      }
+      if (rec.freq === "monthly") {
+        parts.push(field("日付（1〜31・月にない日は月末になります）", h("input", { type: "number", min: 1, max: 31, value: rec.monthDay !== undefined && rec.monthDay !== null ? String(rec.monthDay) : "", placeholder: "初回と同じ日", style: { width: "100px" }, onInput: (event) => { const value = Number(event.target.value); rec.monthDay = event.target.value && value >= 1 && value <= 31 ? value : undefined; updateSummary(); } })));
+      }
+      replace(recBox, ...parts);
+      updateSummary();
+    }
+
+    function updateSummary() {
+      recSummary.textContent = rec ? `予定: ${recurrenceLabel(rec)}` : "";
+    }
+
+    recToggle.addEventListener("change", () => {
+      if (recToggle.checked) {
+        const [hours, minutes] = [baseDate.getHours(), baseDate.getMinutes()];
+        const pad = (n) => String(n).padStart(2, "0");
+        rec = { freq: "weekly", interval: 1, weekdays: [baseDate.getDay()], monthDay: undefined, time: `${pad(hours)}:${pad(minutes)}`, endAt: null };
+      } else rec = null;
+      renderRec();
+    });
+    renderRec();
     const when = h("input", { type: "datetime-local", value: toLocalInput(post.scheduledAt) });
     const caption = h("textarea", { rows: 6, placeholder: "キャプション（ハッシュタグもここに）", value: post.caption });
     const captionCount = h("span", { class: "hint" });
@@ -168,6 +222,7 @@
         shareToFeed: shareToFeed.checked,
         threads: kindSelect.value === "threads" ? post.threads : [],
         attachRuleId: attachSelect.value || null,
+        recurrence: rec,
       };
     }
 
@@ -179,6 +234,12 @@
           field("投稿の種類", kindSelect),
           accountSel ? field("アカウント", accountSel, "このInstagramアカウントに投稿します。") : null,
           field("投稿日時", when, "この時刻にアプリが起動していれば自動投稿します。"),
+        ),
+        h("div", { class: "card", style: { padding: "12px" } },
+          h("label", { class: "inline" }, recToggle, " 繰り返し投稿（公開・失敗・見送りのあとに次回を自動予約）"),
+          recBox,
+          recSummary,
+          post.seriesId ? h("p", { class: "hint" }, "この投稿は繰り返しシリーズの一部です。編集はこの回だけに反映されます。") : null,
         ),
         help,
         mediaBox,
@@ -231,7 +292,7 @@
             return h("div", { class: "item" },
               img,
               h("div", { class: "body" },
-                h("div", { class: "row" }, h("span", { class: "chip", style: { background: POST_KIND[post.kind].color } }, POST_KIND[post.kind].label), h("span", { class: "title" }, snippet(post))),
+                h("div", { class: "row" }, h("span", { class: "chip", style: { background: POST_KIND[post.kind].color } }, POST_KIND[post.kind].label), post.recurrence ? h("span", { class: "chip", style: { background: "#6b7280" }, title: recurrenceLabel(post.recurrence) }, `🔁 ${recurrenceLabel(post.recurrence)}`) : null, h("span", { class: "title" }, snippet(post))),
                 h("div", { class: "meta" }, `${fmt.dateTime(post.scheduledAt)}（${fmt.relative(post.scheduledAt)}）`, post.kind === "threads" ? ` · ${post.threads.length}項目` : ` · メディア${post.media.length}件`, post.attempts ? ` · 試行${post.attempts}回` : "", multi ? ` · ${accountName(post.accountId)}` : ""),
                 post.error ? h("div", { class: "small", style: { color: "var(--danger)" } }, post.error) : null,
                 post.status === "publishing" ? h("div", { class: "progress", dataset: { progress: post.id } }, "投稿中…") : null,
@@ -242,6 +303,10 @@
                 editable && post.status !== "published" ? h("button", { class: "secondary small", type: "button", onClick: (event) => guard(event.currentTarget, async () => { await api("posts:publishNow", { id: post.id }); toast("投稿を開始しました。"); IGUP.rerender(); }) }, post.status === "failed" || post.status === "missed" ? "再試行" : "今すぐ投稿") : null,
                 editable ? h("button", { class: "ghost small", type: "button", onClick: () => openEditor(post) }, "編集") : null,
                 post.status === "scheduled" ? h("button", { class: "ghost small", type: "button", onClick: (event) => guard(event.currentTarget, async () => { await api("posts:cancel", { id: post.id }); IGUP.rerender(); }) }, "取消") : null,
+                (post.recurrence || post.seriesId) && post.status !== "publishing" ? h("button", { class: "ghost small", type: "button", onClick: async (event) => {
+                  if (!(await confirmDialog("この繰り返しシリーズの未投稿分をすべて削除しますか？投稿済みの記録は残ります。", { danger: true, okLabel: "削除" }))) return;
+                  await guard(event.currentTarget, async () => { await api("posts:deleteSeries", { seriesId: post.seriesId ?? post.id }); toast("シリーズを削除しました。"); IGUP.rerender(); });
+                } }, "シリーズ削除") : null,
                 editable ? h("button", { class: "ghost small danger", type: "button", onClick: async (event) => { if (await confirmDialog("この投稿を削除しますか？", { danger: true, okLabel: "削除" })) await guard(event.currentTarget, async () => { await api("posts:delete", { id: post.id }); IGUP.rerender(); }); } }, "削除") : null,
               ),
             );

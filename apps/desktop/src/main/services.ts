@@ -402,6 +402,8 @@ export class Services {
       shareToFeed: input.shareToFeed ?? existing?.shareToFeed ?? true,
       threads: input.threads ?? existing?.threads ?? [],
       attachRuleId: input.attachRuleId === undefined ? existing?.attachRuleId ?? null : input.attachRuleId,
+      recurrence: input.recurrence === undefined ? existing?.recurrence ?? null : input.recurrence,
+      seriesId: existing?.seriesId ?? null,
       publishedId: existing?.publishedId ?? null,
       permalink: existing?.permalink ?? null,
       publishedAt: existing?.publishedAt ?? null,
@@ -428,6 +430,23 @@ export class Services {
     this.data.update((data) => {
       data.posts = data.posts.filter((post) => post.id !== id);
     }, "posts:changed");
+  }
+
+  /** Removes every pending (not yet published) instance of a repeat series; history stays. */
+  deleteSeries(seriesId: string): number {
+    const target = seriesId.trim();
+    if (!target) throw new Error("シリーズIDが不正です。");
+    let removed = 0;
+    this.data.update((data) => {
+      const keep = data.posts.filter((post) => {
+        const inSeries = post.id === target || post.seriesId === target;
+        if (!inSeries || post.status === "published") return true;
+        removed += 1;
+        return false;
+      });
+      data.posts = keep;
+    }, "posts:changed");
+    return removed;
   }
 
   cancelPost(id: string): void {

@@ -240,6 +240,11 @@ export function migrateV1toV2(input: unknown): AppData {
     const items = collectionOf(source[key], owner);
     (data as unknown as Record<string, unknown>)[key] = ACCOUNT_SCOPED_KEYS.has(key) ? items : Array.isArray(source[key]) ? (source[key] as unknown[]).filter((item) => item && typeof item === "object") : [];
   }
+  // posts written before repeat scheduling existed have no recurrence fields
+  for (const post of data.posts) {
+    if (post.recurrence === undefined) post.recurrence = null;
+    if (post.seriesId === undefined) post.seriesId = null;
+  }
   data.automationSince = typeof source.automationSince === "string" ? source.automationSince : null;
   return data;
 }
