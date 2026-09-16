@@ -25,9 +25,12 @@ export function ipcHandlers(services: Services, auth: DesktopAuth, window: () =>
           ? [{ name: "動画", extensions: ["mp4", "mov", "m4v"] }]
           : kind === "json"
             ? [{ name: "JSON", extensions: ["json"] }]
-            : [{ name: "画像・動画", extensions: ["jpg", "jpeg", "png", "mp4", "mov", "m4v"] }];
+            : kind === "csv"
+              ? [{ name: "CSV", extensions: ["csv", "txt"] }]
+              : [{ name: "画像・動画", extensions: ["jpg", "jpeg", "png", "mp4", "mov", "m4v"] }];
       const owner = window();
-      const options = { properties: ["openFile", ...(kind === "json" ? [] : ["multiSelections"])] as ("openFile" | "multiSelections")[], filters };
+      const single = kind === "json" || kind === "csv";
+      const options = { properties: ["openFile", ...(single ? [] : ["multiSelections"])] as ("openFile" | "multiSelections")[], filters };
       const result = owner ? await dialog.showOpenDialog(owner, options) : await dialog.showOpenDialog(options);
       return result.canceled ? [] : result.filePaths;
     },
@@ -78,6 +81,8 @@ export function ipcHandlers(services: Services, auth: DesktopAuth, window: () =>
     "posts:save": (payload) => services.savePost(record(payload) as Partial<ScheduledPost>),
     "posts:delete": (payload) => services.deletePost(text(record(payload).id)),
     "posts:deleteSeries": (payload) => services.deleteSeries(text(record(payload).seriesId)),
+    "posts:importPreview": (payload) => services.previewCsvImport(record(payload) as { path: string }),
+    "posts:importCommit": (payload) => services.commitCsvImport(record(payload) as { path: string }),
     "posts:cancel": (payload) => services.cancelPost(text(record(payload).id)),
     "posts:publishNow": (payload) => services.publishNow(text(record(payload).id)),
     "posts:progress": (payload) => services.scheduler.progressOf(text(record(payload).id)),
@@ -142,7 +147,7 @@ export const IPC_CHANNELS = [
   "instagram:account", "instagram:media", "threads:profile",
   "rules:list", "rules:save", "rules:delete", "rules:test", "rules:chainPayload",
   "automation:status", "automation:setEnabled", "automation:runOnce",
-  "posts:list", "posts:save", "posts:delete", "posts:deleteSeries", "posts:cancel", "posts:publishNow", "posts:progress",
+  "posts:list", "posts:save", "posts:delete", "posts:deleteSeries", "posts:importPreview", "posts:importCommit", "posts:cancel", "posts:publishNow", "posts:progress",
   "media:import", "media:saveEdited", "media:preview",
   "memos:list", "memos:save", "memos:delete",
   "insights:summary", "insights:capture",

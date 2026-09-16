@@ -99,6 +99,7 @@
           h("button", { class: "secondary", type: "button", onClick: () => { cursor = new Date(year, month - 1, 1); IGUP.rerender(); } }, "‹ 前月"),
           h("button", { class: "secondary", type: "button", onClick: () => { cursor = new Date(); cursor.setDate(1); IGUP.rerender(); } }, "今月"),
           h("button", { class: "secondary", type: "button", onClick: () => { cursor = new Date(year, month + 1, 1); IGUP.rerender(); } }, "翌月 ›"),
+          h("button", { class: "secondary", type: "button", onClick: () => IGUP.csvImport.open() }, "CSV読み込み"),
           h("button", { type: "button", onClick: () => openMemoEditor(null, todayKey) }, "＋ メモ"),
         ),
         accountChips(accountFilter, (value) => { accountFilter = value; IGUP.rerender(); }),

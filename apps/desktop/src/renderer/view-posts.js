@@ -269,6 +269,76 @@
     return text.trim().split("\n")[0].slice(0, 60) || `${POST_KIND[post.kind].label}（本文なし）`;
   }
 
+  // ---- CSV一括インポート（カレンダーからも IGUP.csvImport.open() で使う） ----
+
+  const SAMPLE_CSV = [
+    "投稿日時,種別,キャプション,メディアパス,繰り返し,アカウント",
+    "2026-04-01 10:00,フィード画像,新商品のご案内です。詳細はプロフィールのリンクから。,C:/Pictures/item1.jpg,,",
+    "2026-04-03 20:00,カルーセル,\"使い方を2枚の画像でご紹介。\",C:/Pictures/a.jpg;C:/Pictures/b.jpg,\"毎週(火,金) 20:00\",",
+    "2026-04-05 09:00,リール,制作風景の動画です。,C:/Pictures/clip.mp4,,",
+    "2026-04-05 21:00,ストーリーズ,本日のおすすめ。,C:/Pictures/story.jpg,,",
+    "2026-04-06 12:00,Threads,今日のひとこと。,,,",
+    "2026-04-08 19:00,フィード画像,\"セール中, 詳しくはDMまで\",C:/Pictures/sale.jpg,毎月15 19:00〜2026/12/31,",
+  ].join("\r\n");
+
+  function openCsvImport() {
+    guard(null, async () => {
+      const paths = await api("app:pickFiles", { kind: "csv" });
+      if (paths.length === 0) return;
+      const preview = await api("posts:importPreview", { path: paths[0] });
+      const body = h("div", { class: "stack" });
+      const dialog = openModal({
+        title: "CSVを読み込む",
+        wide: true,
+        body,
+        footer: [
+          h("button", { class: "ghost", type: "button", onClick: (event) => guard(event.currentTarget, async () => {
+            const saved = await api("app:saveFile", { defaultName: "igup-import-sample.csv", content: `\uFEFF${SAMPLE_CSV}` });
+            if (saved.saved) toast("サンプルCSVを保存しました。");
+          }) }, "サンプルCSVを書き出す"),
+          h("button", { class: "ghost", type: "button", onClick: () => dialog.close() }, "キャンセル"),
+          h("button", { type: "button", disabled: preview.rows.length === 0, onClick: (event) => guard(event.currentTarget, async () => {
+            const result = await api("posts:importCommit", { path: preview.path });
+            if (result.failed.length === 0) {
+              dialog.close();
+              toast(`予約投稿を${result.imported}件読み込みました。`);
+              IGUP.rerender();
+              return;
+            }
+            replace(body,
+              h("p", {}, `予約投稿を${result.imported}件読み込みました。`),
+              h("div", { class: "card", style: { borderColor: "var(--danger)", padding: "12px" } },
+                h("strong", { class: "small" }, `スキップした行（${result.failed.length}件）`),
+                h("ul", {}, result.failed.map((item) => h("li", { class: "small" }, `${item.line}行目: ${item.error}`))),
+              ),
+            );
+            event.currentTarget.replaceWith(h("button", { type: "button", onClick: () => { dialog.close(); IGUP.rerender(); } }, "閉じる"));
+          }) }, preview.rows.length === 0 ? "読み込める行がありません" : `問題のない${preview.rows.length}行を読み込む`),
+        ],
+      });
+      replace(body,
+        h("p", { class: "hint" }, "メディアファイルはアプリの管理フォルダーにコピーして取り込みます。元のファイルを移動・削除しても予約は壊れません。"),
+        preview.problems.length > 0 ? h("div", { class: "card", style: { borderColor: "var(--danger)", padding: "12px" } },
+          h("strong", { class: "small" }, `読み飛ばす行（${preview.problems.length}件）`),
+          h("ul", {}, preview.problems.map((item) => h("li", { class: "small" }, `${item.line}行目: ${item.message}`))),
+        ) : null,
+        preview.rows.length === 0 ? h("p", { class: "muted" }, "読み込める行がありませんでした。サンプルCSVのヘッダーと書き方を確認してください。") :
+          h("div", { class: "table-wrap" }, h("table", {},
+            h("thead", {}, h("tr", {}, ["行", "投稿日時", "種別", "キャプション", "メディア", "繰り返し", "アカウント"].map((label) => h("th", {}, label)))),
+            h("tbody", {}, preview.rows.map((row) => h("tr", {},
+              h("td", {}, String(row.line)),
+              h("td", {}, fmt.dateTime(row.scheduledAt)),
+              h("td", {}, POST_KIND[row.kind].label),
+              h("td", {}, row.caption || "—"),
+              h("td", {}, row.kind === "threads" ? "—" : `${row.mediaCount}件`),
+              h("td", {}, row.recurrence ?? "—"),
+              h("td", {}, row.account ?? "—"),
+            ))),
+          )),
+      );
+    });
+  }
+
   IGUP.views.posts = {
     title: "予約投稿",
     icon: "▤",
@@ -280,7 +350,9 @@
       const multi = accounts().length > 1;
 
       replace(container,
-        pageHead("予約投稿", "フィード・カルーセル・リール・ストーリーズ・Threadsを予約して自動投稿します。", h("button", { type: "button", onClick: () => openEditor(null) }, "＋ 投稿を予約")),
+        pageHead("予約投稿", "フィード・カルーセル・リール・ストーリーズ・Threadsを予約して自動投稿します。",
+          h("button", { class: "secondary", type: "button", onClick: () => openCsvImport() }, "CSV読み込み"),
+          h("button", { type: "button", onClick: () => openEditor(null) }, "＋ 投稿を予約")),
         accountChips(accountFilter, (value) => { accountFilter = value; IGUP.rerender(); }),
         h("div", { class: "subtabs" }, FILTERS.map((item) => h("button", { type: "button", class: item.key === filter ? "active" : "", onClick: () => { filter = item.key; IGUP.rerender(); } }, `${item.label}（${counts[item.key]}）`))),
         visible.length === 0 ? h("div", { class: "empty" }, "該当する投稿はありません。") :
@@ -317,4 +389,5 @@
     },
   };
   IGUP.posts = { openEditor, dropzone, mediaGrid, preview };
+  IGUP.csvImport = { open: openCsvImport };
 })();

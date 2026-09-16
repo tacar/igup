@@ -1,14 +1,15 @@
 import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { BrokerClient } from "./broker-client.js";
 import { DataStore } from "./data-store.js";
+import { decodeCsvBytes, parseImportRows } from "./csv-import.js";
 import { AutomationEngine, messageOf } from "./engine.js";
 import { newId, nowIso } from "./ids.js";
 import { InsightsCollector } from "./insights.js";
 import { InstagramClient } from "./instagram-client.js";
 import { LineClient } from "./line-client.js";
 import { LocalApi, type ApiRoute } from "./local-api.js";
-import { contentTypeFor, isImageFile, isVideoFile, validatePost } from "./posts.js";
+import { contentTypeFor, isImageFile, isVideoFile, recurrenceLabel, validatePost } from "./posts.js";
 import { encodeChainPayload, validateRule } from "./rules.js";
 import { Scheduler } from "./scheduler.js";
 import { SeminarService } from "./seminars.js";
@@ -45,6 +46,12 @@ export type ServicesOptions = {
   appVersion: string;
   /** Called whenever the effective broker URL changes so the desktop auth flow can follow it. */
   onBrokerUrlChanged?: (url: string) => void;
+};
+
+export type CsvImportPreview = {
+  path: string;
+  rows: { line: number; scheduledAt: string; kind: ScheduledPost["kind"]; caption: string; mediaCount: number; recurrence: string | null; account: string | null }[];
+  problems: { line: number; message: string }[];
 };
 
 /** Everything the UI (IPC) and the local HTTP API can do, in one place. */
@@ -514,6 +521,78 @@ export class Services {
     if (size > 25 * 1_048_576) return null;
     const bytes = await readFile(asset.localPath);
     return `data:${contentTypeFor(asset.fileName)};base64,${bytes.toString("base64")}`;
+  }
+
+  // ---------------------------------------------------------------- csv import
+
+  private async readImportCsv(path: unknown): Promise<{ text: string; baseDir: string; filePath: string }> {
+    const filePath = typeof path === "string" ? path.trim() : "";
+    if (!filePath) throw new Error("CSVファイルを選択してください。");
+    const bytes = new Uint8Array(await readFile(filePath));
+    return { text: decodeCsvBytes(bytes), baseDir: dirname(filePath), filePath };
+  }
+
+  /** Parses a CSV file and reports row-level problems without importing anything. */
+  async previewCsvImport(payload: { path: string }): Promise<CsvImportPreview> {
+    const { text, baseDir, filePath } = await this.readImportCsv(payload);
+    const { rows, problems } = parseImportRows(text, baseDir);
+    return {
+      path: filePath,
+      rows: rows.map((row) => ({
+        line: row.line,
+        scheduledAt: row.scheduledAt,
+        kind: row.kind,
+        caption: row.caption.length > 60 ? `${row.caption.slice(0, 60)}…` : row.caption,
+        mediaCount: row.mediaPaths.length,
+        recurrence: row.recurrence ? recurrenceLabel(row.recurrence) : null,
+        account: row.accountId,
+      })),
+      problems,
+    };
+  }
+
+  /** Re-reads the CSV and creates one scheduled post per row, skipping rows that fail. */
+  async commitCsvImport(payload: { path: string }): Promise<{ imported: number; failed: { line: number; error: string }[] }> {
+    const { text, baseDir, filePath } = await this.readImportCsv(payload);
+    const { rows } = parseImportRows(text, baseDir);
+    if (rows.length === 0) throw new Error("読み込める行がありません。プレビューで問題を確認してください。");
+    const failed: { line: number; error: string }[] = [];
+    let imported = 0;
+    for (const row of rows) {
+      try {
+        const accountId = this.resolveCsvAccountId(row.accountId);
+        const media = row.mediaPaths.length > 0 ? await this.importMedia(row.mediaPaths) : [];
+        this.savePost({
+          accountId,
+          kind: row.kind,
+          scheduledAt: row.scheduledAt,
+          caption: row.kind === "threads" ? "" : row.caption,
+          media,
+          cover: null,
+          shareToFeed: true,
+          threads: row.kind === "threads" ? [{ text: row.caption, media: [] }] : [],
+          attachRuleId: null,
+          recurrence: row.recurrence,
+        });
+        imported += 1;
+      } catch (cause) {
+        failed.push({ line: row.line, error: messageOf(cause) });
+      }
+    }
+    if (imported > 0) {
+      this.data.log("info", "post", `CSVから予約投稿を${imported}件読み込みました`, `${basename(filePath)}${failed.length > 0 ? `（スキップ${failed.length}件）` : ""}`);
+    }
+    return { imported, failed };
+  }
+
+  /** Matches the CSV account column by id / username / Threads username; empty falls back to the active account. */
+  private resolveCsvAccountId(input: string | null): string {
+    if (!input) return this.resolveAccountId(undefined);
+    const key = input.trim().replace(/^@/, "").toLowerCase();
+    const account = this.data.get().accounts.find((item) =>
+      item.id.toLowerCase() === key || item.username.toLowerCase() === key || (item.threadsUsername ?? "").toLowerCase() === key);
+    if (!account) throw new Error(`アカウント「${input}」が見つかりません。接続画面のユーザー名と一致させてください。`);
+    return account.id;
   }
 
   // ---------------------------------------------------------------- calendar memos

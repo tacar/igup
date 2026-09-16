@@ -7,7 +7,7 @@ const CHANNELS = new Set([
   "instagram:account", "instagram:media", "threads:profile",
   "rules:list", "rules:save", "rules:delete", "rules:test", "rules:chainPayload",
   "automation:status", "automation:setEnabled", "automation:runOnce",
-  "posts:list", "posts:save", "posts:delete", "posts:deleteSeries", "posts:cancel", "posts:publishNow", "posts:progress",
+  "posts:list", "posts:save", "posts:delete", "posts:deleteSeries", "posts:importPreview", "posts:importCommit", "posts:cancel", "posts:publishNow", "posts:progress",
   "media:import", "media:saveEdited", "media:preview",
   "memos:list", "memos:save", "memos:delete",
   "insights:summary", "insights:capture",
