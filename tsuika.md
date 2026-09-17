@@ -1,5 +1,7 @@
-https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXYhttps://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXY
+https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXY
 を参照
+
+これでできることはすべてやる
 
 読んで
 ./ig.md
@@ -8,8 +10,9 @@ https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXYhttps://brain-market.
 商材として買い切りで販売する。
 
 
-使い方はを書いて
+使い方を書いて
 htmlに
+
 
 
 
