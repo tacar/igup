@@ -12,7 +12,6 @@ https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXY
 
 使い方を書いて
 htmlに
-g
 
 
 
