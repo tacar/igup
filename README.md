@@ -2,6 +2,19 @@
 
 Instagram（＋Threads・LINE）の運用を1台のPCだけで回すためのデスクトップアプリです。キーワード自動返信、予約投稿、計測、LINEセミナー集客までをカバーします。すべての自動化・スケジューリングはこのPC上で動作し、外部のクラウドサービスにデータを預けません。
 
+## リンク
+
+| ページ | URL |
+| --- | --- |
+| 製品サイト（トップ） | https://tacar.github.io/igup/ |
+| 製品紹介（LP） | https://tacar.github.io/igup/lp.html |
+| インストール手順 | https://tacar.github.io/igup/install.html |
+| 使い方 | https://tacar.github.io/igup/usage.html |
+| 製品概要 | https://tacar.github.io/igup/overview.html |
+| 販売ページ | https://brain-market.com/u/riko_nft/a/b3gTNxYjMgoTZsNWa0JXY |
+
+`docs/` の購入者向けドキュメントは公開サイトとして同期されており、ログインなしで閲覧できます（公開リポジトリ: [`tacar/igup`](https://github.com/tacar/igup)。アプリのソースコードは [`tacar/igup-src`](https://github.com/tacar/igup-src) に非公開で置いてあります）。
+
 ## できること
 
 - **キーワード自動返信** — コメント・DM・ストーリーズ返信・ライブ配信コメントに反応し、公開返信（最大3パターンからランダム選択）とDMを自動送信
